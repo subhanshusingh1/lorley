@@ -1,0 +1,40 @@
+.admin-dashboard {
+    padding: 20px;
+}
+  
+.admin-dashboard h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+  
+.admin-dashboard section {
+    margin-bottom: 30px;
+}
+  
+.admin-dashboard ul {
+    list-style: none;
+    padding: 0;
+}
+  
+.admin-dashboard li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+  
+.admin-dashboard button {
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+  
+.admin-dashboard button:hover {
+    background-color: #cc0000;
+}
+  
