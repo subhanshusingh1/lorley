@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { register } from '../actions/authActions';
+import { registerUser as register } from '../actions/authActions';
 import api from '../utils/api';
 import './RegisterPage.css';
 
