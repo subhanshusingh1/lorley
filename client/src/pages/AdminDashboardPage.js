@@ -1,29 +1,47 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+
 import api from '../utils/api';
 import './AdminDashboardPage.css';
 
 const AdminDashboardPage = () => {
-  const [businesses, setBusinesses] = useState([]);
+  const dispatch = useDispatch();
+
+  const businessList = useSelector((state) => state.businessList);
+  const { loading, error, businesses } = businessList;
+
   const [users, setUsers] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [newBusiness, setNewBusiness] = useState({
+    name: '',
+    description: '',
+    logo: '',
+  });
 
   useEffect(() => {
-    const fetchData = async () => {
-      const businessData = await api.get('/businesses');
-      const userData = await api.get('/users');
-      const reviewData = await api.get('/reviews');
+    dispatch(listBusinesses());
+    fetchUsersAndReviews();
+  }, [dispatch]);
 
-      setBusinesses(businessData.data);
-      setUsers(userData.data);
-      setReviews(reviewData.data);
-    };
+  const fetchUsersAndReviews = async () => {
+    const userData = await api.get('/users');
+    const reviewData = await api.get('/reviews');
+    setUsers(userData.data);
+    setReviews(reviewData.data);
+  };
 
-    fetchData();
-  }, []);
+  const handleCreate = (e) => {
+    e.preventDefault();
+    dispatch(createBusiness(newBusiness));
+    setNewBusiness({ name: '', description: '', logo: '' }); // Reset form
+  };
 
-  const handleDeleteBusiness = async (id) => {
-    await api.delete(`/businesses/${id}`);
-    setBusinesses(businesses.filter((business) => business._id !== id));
+  const handleUpdate = (id) => {
+    dispatch(updateBusiness(id, newBusiness));
+  };
+
+  const handleDeleteBusiness = (id) => {
+    dispatch(deleteBusiness(id));
   };
 
   const handleDeleteUser = async (id) => {
@@ -39,17 +57,49 @@ const AdminDashboardPage = () => {
   return (
     <div className="admin-dashboard">
       <h2>Admin Dashboard</h2>
-      
+      {error && <p className="error">{error}</p>}
+      {loading && <p>Loading...</p>}
+
       <section>
-        <h3>Businesses</h3>
-        <ul>
-          {businesses.map((business) => (
-            <li key={business._id}>
-              {business.name}
+        <h3>Manage Businesses</h3>
+        <form onSubmit={handleCreate}>
+          <label>Business Name:</label>
+          <input
+            type="text"
+            value={newBusiness.name}
+            onChange={(e) => setNewBusiness({ ...newBusiness, name: e.target.value })}
+          />
+
+          <label>Description:</label>
+          <input
+            type="text"
+            value={newBusiness.description}
+            onChange={(e) => setNewBusiness({ ...newBusiness, description: e.target.value })}
+          />
+
+          <label>Logo (URL):</label>
+          <input
+            type="text"
+            value={newBusiness.logo}
+            onChange={(e) => setNewBusiness({ ...newBusiness, logo: e.target.value })}
+          />
+
+          <button type="submit">Create Business</button>
+        </form>
+
+        <div className="business-list">
+          <h4>Existing Businesses</h4>
+          {businesses && businesses.map((business) => (
+            <div key={business._id} className="business-item">
+              <p>{business.name}</p>
+              <p>{business.description}</p>
+              <img src={business.logo} alt={`${business.name} logo`} />
+
+              <button onClick={() => handleUpdate(business._id)}>Update</button>
               <button onClick={() => handleDeleteBusiness(business._id)}>Delete</button>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       </section>
 
       <section>

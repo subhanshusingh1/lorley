@@ -2,28 +2,122 @@
     max-width: 400px;
     margin: 2rem auto;
     padding: 2rem;
-    border: 1px solid #ccc;
+    border: 1px solid #e0e0e0;
     border-radius: 8px;
-}
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+  }
   
-.register-page h2 {
+  .register-page h2 {
     text-align: center;
     margin-bottom: 1.5rem;
-}
+    color: #333;
+    font-size: 24px;
+  }
   
-.form-group {
+  .form-group {
     margin-bottom: 1rem;
-}
+  }
   
-.form-group label {
+  .form-group label {
     display: block;
     margin-bottom: 0.5rem;
-}
+    font-weight: bold;
+    color: #555;
+  }
   
-.form-group input {
+  .form-group input,
+  .form-group select {
     width: 100%;
     padding: 0.5rem;
     border: 1px solid #ccc;
     border-radius: 4px;
-}
+    font-size: 16px;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  }
+  
+  .form-group select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23555' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 12px;
+    padding-right: 2rem;
+  }
+  
+  button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  button:hover {
+    background-color: #0056b3;
+  }
+  
+  button[type="button"] {
+    background-color: #6c757d;
+    margin-top: 0.5rem;
+  }
+  
+  button[type="button"]:hover {
+    background-color: #5a6268;
+  }
+  
+  p {
+    text-align: center;
+    margin-top: 1rem;
+    color: #666;
+  }
+  
+  a {
+    color: #007bff;
+    text-decoration: none;
+  }
+  
+  a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 480px) {
+    .register-page {
+      max-width: 100%;
+      margin: 1rem;
+      padding: 1rem;
+    }
+  }
+  
+  /* OTP input styling */
+  .form-group input[name="otp"] {
+    letter-spacing: 0.5em;
+    text-align: center;
+    font-size: 18px;
+  }
+  
+  /* Error message styling */
+  .error-message {
+    color: #dc3545;
+    font-size: 14px;
+    margin-top: 0.25rem;
+  }
+  
+  /* Success message styling */
+  .success-message {
+    color: #28a745;
+    font-size: 14px;
+    margin-top: 0.25rem;
+  }
   

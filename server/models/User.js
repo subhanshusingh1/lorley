@@ -8,7 +8,9 @@ const userSchema = new mongoose.Schema({
   mobile: { type: String, required: true, unique: true },
   isVerified: { type: Boolean, default: false },
   otp: { type: String },
+  otpExpiry: { type: Date },
   role: { type: String, default: 'user' }, // 'admin' or 'user'
+  isAdmin: { type: Boolean, default: false },
 }, { timestamps: true });
 
 // Password hashing middleware
