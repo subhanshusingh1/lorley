@@ -1,54 +1,60 @@
 const Business = require('../models/Business');
 
-// Create a new business
-const createBusiness = async (req, res) => {
-  const { name, address, phoneNumber, description } = req.body;
-  const business = await Business.create({
-    name,
-    address,
-    phoneNumber,
-    description,
-    owner: req.user._id,
-  });
+// Create or Update Business
+exports.createOrUpdateBusiness = async (req, res) => {
+  try {
+    const { name, description, category } = req.body;
+    const logo = req.file ? req.file.path : null; // Handle file upload (logo)
+    
+    let business;
+    if (req.params.id) {
+      // Update existing business
+      business = await Business.findById(req.params.id);
+      if (!business) return res.status(404).json({ message: 'Business not found' });
 
-  res.status(201).json(business);
-};
+      business.name = name;
+      business.description = description;
+      business.category = category;
+      if (logo) business.logo = logo;
 
-// Update a business
-const updateBusiness = async (req, res) => {
-  const business = await Business.findById(req.params.id);
-
-  if (business.owner.toString() !== req.user._id.toString()) {
-    return res.status(401).json({ message: 'Not authorized' });
+      await business.save();
+      return res.status(200).json(business);
+    } else {
+      // Create new business
+      business = new Business({
+        name,
+        description,
+        category,
+        logo,
+        owner: req.user.id
+      });
+      await business.save();
+      return res.status(201).json(business);
+    }
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
-
-  Object.assign(business, req.body);
-  await business.save();
-
-  res.json(business);
 };
 
-// Delete a business
-const deleteBusiness = async (req, res) => {
-  const business = await Business.findById(req.params.id);
-
-  if (business.owner.toString() !== req.user._id.toString()) {
-    return res.status(401).json({ message: 'Not authorized' });
+// Fetch all businesses with optional category filtering
+exports.getBusinesses = async (req, res) => {
+  try {
+    const { category } = req.query;
+    const filter = category ? { category } : {};
+    
+    const businesses = await Business.find(filter);
+    return res.status(200).json(businesses);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
-
-  await business.remove();
-  res.json({ message: 'Business deleted' });
 };
 
-// Get all businesses
-const getAllBusinesses = async (req, res) => {
-  const businesses = await Business.find();
-  res.json(businesses);
-};
-
-module.exports = {
-  createBusiness,
-  updateBusiness,
-  deleteBusiness,
-  getAllBusinesses,
+// Fetch all available categories (unique)
+exports.getCategories = async (req, res) => {
+  try {
+    const categories = await Business.distinct('category');
+    return res.status(200).json(categories);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 };
