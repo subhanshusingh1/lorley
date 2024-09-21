@@ -1,29 +1,16 @@
 const express = require('express');
-const { 
-  createReview, 
-  getReviewsForBusiness, 
-  getBusinessRating,
-  likeReview,
-  replyToReview
-} = require('../controllers/reviewController');
-const protect = require('../middleware/authMiddleware');
-const upload = require('../middleware/uploadMiddleware'); // For handling image uploads
+const { createReview, getReviews, deleteReview } = require('../controllers/reviewController');
+const {protect} = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
-// Create a new review with optional image (protected route)
-router.post('/', protect, upload.single('image'), createReview);
+// Create or Get Review 
+router.route('/:businessId')
+.post(protect, createReview)
+.get(getReviews);
 
-// Get reviews for a specific business
-router.get('/:businessId', getReviewsForBusiness);
-
-// Get average rating for a specific business
-router.get('/:businessId/rating', getBusinessRating);
-
-// Like a review (protected route)
-router.post('/:id/like', protect, likeReview);
-
-// Reply to a review by the business owner (protected route)
-router.post('/:id/reply', protect, replyToReview);
+// Delete Specific Review
+router.route('/:reviewId')
+.delete(protect, deleteReview);
 
 module.exports = router;

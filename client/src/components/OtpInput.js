@@ -2,14 +2,28 @@ import React, { useState } from 'react';
 
 const OtpInput = ({ onSubmit }) => {
   const [otp, setOtp] = useState('');
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
-    setOtp(e.target.value);
+    const value = e.target.value;
+
+    // Allow only numbers and uppercase letters
+    if (/^[A-Z0-9]*$/.test(value)) {
+      setOtp(value);
+      setError(''); // Clear error if valid
+    } else {
+      setError('OTP should only contain numbers and uppercase letters.');
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(otp);  // Pass the OTP to the parent component
+
+    if (otp.length === 8) {
+      onSubmit(otp); // Pass OTP to the parent component
+    } else {
+      setError('OTP must be 6 characters long.');
+    }
   };
 
   return (
@@ -21,9 +35,13 @@ const OtpInput = ({ onSubmit }) => {
           id="otp"
           value={otp}
           onChange={handleChange}
-          maxLength="6"
+          maxLength="8"
           required
+          aria-label="Enter your 8-character OTP"
+          aria-invalid={error ? 'true' : 'false'}
+          style={{ textTransform: 'uppercase' }} // Force uppercase input
         />
+        {error && <p className="error-message">{error}</p>}
         <button type="submit">Verify OTP</button>
       </form>
     </div>

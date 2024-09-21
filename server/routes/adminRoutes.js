@@ -1,11 +1,9 @@
 const express = require('express');
-const { getUsers, getBusinesses, deleteUser } = require('../controllers/adminController');
-const { protect, admin } = require('../middleware/authMiddleware');
+const { getUsers, deleteUser } = require('../controllers/adminController');
+const { protect } = require('../middlewares/authMiddleware');
 const router = express.Router();
 
-// Admin-only routes
-router.get('/users', protect, admin, getUsers);
-router.get('/businesses', protect, admin, getBusinesses);
-router.delete('/users/:userId', protect, admin, deleteUser);
+router.get('/users', protect, getUsers);
+router.delete('/users/:id', protect, deleteUser);
 
 module.exports = router;

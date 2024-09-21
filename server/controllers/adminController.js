@@ -1,28 +1,21 @@
 const User = require('../models/User');
-const Business = require('../models/Business');
+const asyncHandler = require('express-async-handler');
 
 // Get all users
-const getUsers = async (req, res) => {
-  const users = await User.find().select('-password');
-  res.json(users);
-};
-
-// Get all businesses
-const getBusinesses = async (req, res) => {
-  const businesses = await Business.find();
-  res.json(businesses);
-};
+exports.getUsers = asyncHandler(async (req, res) => {
+    const users = await User.find().select('-password'); // Exclude passwords from response
+    res.status(200).json({ success: true, data: users });
+});
 
 // Delete a user
-const deleteUser = async (req, res) => {
-  const user = await User.findById(req.params.userId);
+exports.deleteUser = asyncHandler(async (req, res) => {
+    const userId = req.params.id;
+    const user = await User.findById(userId);
 
-  if (user) {
+    if (!user) {
+        return res.status(404).json({ success: false, msg: 'User not found' });
+    }
+
     await user.remove();
-    res.json({ message: 'User removed' });
-  } else {
-    res.status(404).json({ message: 'User not found' });
-  }
-};
-
-module.exports = { getUsers, getBusinesses, deleteUser };
+    res.status(200).json({ success: true, msg: 'User removed' });
+});

@@ -6,84 +6,103 @@ import {
   LOGIN_REQUEST,
   LOGIN_SUCCESS, 
   LOGIN_FAIL, 
-  LOGOUT, 
-  SEND_OTP_REQUEST,
-  SEND_OTP_SUCCESS,
-  SEND_OTP_FAIL,
-  PASSWORD_RESET_REQUEST,
-  PASSWORD_RESET_SUCCESS,
-  PASSWORD_RESET_FAIL 
+  OTP_REQUEST,
+  OTP_VERIFIED,
+  OTP_FAILED,
+  LOGOUT
 } from './types';
 
-// Send OTP to email or mobile
-export const sendOtp = (emailOrMobile) => async (dispatch) => {
-  try {
-    dispatch({ type: SEND_OTP_REQUEST });
-    const res = await axios.post('/api/auth/send-otp', { emailOrMobile });
-    dispatch({
-      type: SEND_OTP_SUCCESS,
-      payload: res.data.message,
-    });
-  } catch (error) {
-    dispatch({
-      type: SEND_OTP_FAIL,
-      payload: error.response.data.message,
-    });
-  }
-};
 
-// Register user with OTP verification
-export const registerUser = ({ name, emailOrMobile, otp, password }) => async (dispatch) => {
+// Register user
+export const registerUser = ({ name, email, mobile, password }) => async (dispatch) => {
   try {
     dispatch({ type: REGISTER_REQUEST });
-    const res = await axios.post('/api/auth/register', { name, emailOrMobile, otp, password });
-    dispatch({
-      type: REGISTER_SUCCESS,
-      payload: res.data,
-    });
+    const res = await axios.post('/api/auth/register', { name, email, mobile, password });
+    
+    if (res.data.success) {
+      dispatch({
+        type: REGISTER_SUCCESS,
+        payload: res.data,
+      });
+      return { success: true };
+    } else {
+      dispatch({
+        type: REGISTER_FAIL,
+        payload: res.data.message || 'Registration failed. Please try again.',
+      });
+      return { success: false, message: res.data.message || 'Registration failed.' };
+    }
   } catch (error) {
+    const errorMessage = error.response?.data?.message || 'An error occurred. Please try again.';
     dispatch({
       type: REGISTER_FAIL,
-      payload: error.response.data.message,
+      payload: errorMessage,
     });
+    return { success: false, message: errorMessage };
   }
 };
 
-// Log in user
+// Verify OTP
+export const verifyOtp = (otp) => async (dispatch) => {
+  try {
+    dispatch({ type: OTP_REQUEST });
+    const res = await axios.post('/api/auth/verify-otp', { otp });
+    
+    if (res.data.success) {
+      dispatch({
+        type: OTP_VERIFIED,
+        payload: res.data.message,
+      });
+      return { success: true };
+    } else {
+      dispatch({
+        type: OTP_FAILED,
+        payload: res.data.message || 'OTP verification failed.',
+      });
+      return { success: false, message: res.data.message || 'OTP verification failed.' };
+    }
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || 'An error occurred during OTP verification.';
+    dispatch({
+      type: OTP_FAILED,
+      payload: errorMessage,
+    });
+    return { success: false, message: errorMessage };
+  }
+};
+
+// Password-based login
 export const loginUser = (emailOrMobile, password) => async (dispatch) => {
   try {
     dispatch({ type: LOGIN_REQUEST });
     const res = await axios.post('/api/auth/login', { emailOrMobile, password });
-    dispatch({
-      type: LOGIN_SUCCESS,
-      payload: res.data,
-    });
+    
+    if (res.data.success) {
+      dispatch({
+        type: LOGIN_SUCCESS,
+        payload: res.data,  
+      });
+      return { success: true };
+    } else {
+      dispatch({
+        type: LOGIN_FAIL,
+        payload: res.data.message || 'Login failed. Please try again.',
+      });
+      return { success: false, message: res.data.message || 'Login failed.' };
+    }
   } catch (error) {
+    const errorMessage = error.response?.data?.message || 'An error occurred during login.';
     dispatch({
       type: LOGIN_FAIL,
-      payload: error.response.data.message,
+      payload: errorMessage,
     });
+    return { success: false, message: errorMessage };
   }
 };
 
-// Log out user
-export const logout = () => (dispatch) => {
-  dispatch({ type: LOGOUT });
-};
-
-// Reset password with OTP
-export const resetPassword = (emailOrMobile, otp, newPassword) => async (dispatch) => {
-  try {
-    dispatch({ type: PASSWORD_RESET_REQUEST });
-    const res = await axios.post('/api/auth/reset-password', { emailOrMobile, otp, newPassword });
-    dispatch({
-      type: PASSWORD_RESET_SUCCESS,
-      payload: res.data.message,
-    });
-  } catch (error) {
-    dispatch({
-      type: PASSWORD_RESET_FAIL,
-      payload: error.response.data.message,
-    });
-  }
+// Logout action
+export const logout = () => {
+  return {
+    type: LOGOUT,
+  };
 };

@@ -1,37 +1,61 @@
 const express = require('express');
+// environmental variable
+require('dotenv').config();
+// database connection
 const connectDB = require('./config/db');
-const dotenv = require('dotenv');
-const authRoutes = require('./routes/authRoutes');
-const businessRoutes = require('./routes/businessRoutes');
-const reviewRoutes = require('./routes/reviewRoutes');
-const adminRoutes = require('./routes/adminRoutes');
+// cookie parser
+const cookieParser = require('cookie-parser');
 const userRoutes = require('./routes/userRoutes');
-const { errorHandler } = require('./middleware/errorHandler');
+const businessRoutes = require('./routes/businessRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const jobRoutes = require('./routes/jobRoutes');
+const newsRoutes = require('./routes/newsRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const helmet = require('helmet');
+const cors = require('cors');
+const { notFound, errorHandler } = require('./middlewares/errorMiddleware.js');
 
-// Load env variables
-dotenv.config();
 
-// Initialize Express
 const app = express();
-app.use(express.json());
 
-// Database connection
-connectDB();
+// security middleware
+app.use(helmet());
+app.use(cors());
+
+// parse json 
+app.use(express.json());
+// pare url encoded 
+app.use(express.urlencoded({extended:true}));
+// cookie parser
+app.use(cookieParser());
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/businesses', businessRoutes);
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/businesses', businessRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/jobs', jobRoutes);
+app.use('/api/v1/news', newsRoutes);
+app.use('/api/v1/reviews', reviewRoutes);
 
-// Error Handling Middleware
-app.use((err, req, res, next) => {
-  res.status(500).json({ message: err.message });
-});
-
+// for undefined routes and handling errors
+app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const startServer = () => {
+    app.listen(process.env.PORT, () => {
+        console.log(`Server is listening on Port: ${process.env.PORT}`)
+    });
+}
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const startApp = async () => {
+    try {
+
+        await connectDB();
+        startServer();
+        
+    } catch (error) {
+        console.log(`Error : ${error.message}`)
+    }
+}
+
+startApp();

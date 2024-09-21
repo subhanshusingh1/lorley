@@ -32,3 +32,11 @@
     height: 100px;
 }
   
+.error {
+    color: red;
+  }
+  .image-preview {
+    max-width: 100px; /* Adjust as needed */
+    margin-top: 10px;
+  }
+  

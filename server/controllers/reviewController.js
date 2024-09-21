@@ -1,109 +1,63 @@
 const Review = require('../models/Review');
 const Business = require('../models/Business');
+const asyncHandler = require('express-async-handler');
 
-// Create a new review
-exports.createReview = async (req, res) => {
-  const { rating, comment, businessId } = req.body;
-  const image = req.file ? req.file.path : null; // Handle image upload
+// Creating new Review
+exports.createReview = asyncHandler(async (req, res) => {
+    const { rating, comment } = req.body;
 
-  try {
-    const existingReview = await Review.findOne({
-      user: req.user.id,
-      business: businessId,
-    });
+    // Validate input
+    if (typeof rating !== 'number' || rating < 1 || rating > 5) {
+        return res.status(400).json({ message: 'Rating must be a number between 1 and 5' });
+    }
 
-    if (existingReview) {
-      return res.status(400).json({ message: 'You have already reviewed this business' });
+    const business = await Business.findById(req.params.businessId);
+
+    if (!business) {
+        return res.status(404).json({ message: 'Business not found' });
     }
 
     const review = new Review({
-      business: businessId,
-      user: req.user.id,
-      rating,
-      comment,
-      image
+        user: req.user.id,
+        business: req.params.businessId,
+        rating,
+        comment,
     });
 
     await review.save();
-    res.status(201).json(review);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-};
 
-// Get reviews for a specific business
-exports.getReviewsForBusiness = async (req, res) => {
-  try {
+    res.status(201).json({
+        success: true,
+        review
+    });
+});
+
+// Get Review
+exports.getReviews = asyncHandler(async (req, res) => {
     const reviews = await Review.find({ business: req.params.businessId }).populate('user', 'name');
-    
-    if (!reviews || reviews.length === 0) {
-      return res.status(404).json({ message: 'No reviews found' });
+
+    res.json({
+        success: true,
+        reviews
+    });
+});
+
+// Delete Review
+exports.deleteReview = asyncHandler(async (req, res) => {
+    const review = await Review.findById(req.params.reviewId);
+
+    if (!review) {
+        return res.status(404).json({ message: 'Review not found' });
     }
 
-    res.status(200).json(reviews);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-};
-
-// Calculate average rating for a business
-exports.getBusinessRating = async (req, res) => {
-  try {
-    const reviews = await Review.find({ business: req.params.businessId });
-
-    if (reviews.length === 0) {
-      return res.status(404).json({ message: 'No reviews found for this business' });
+    if (review.user.toString() !== req.user.id) {
+        return res.status(401).json({ message: 'Not authorized to delete this review' });
     }
 
-    const avgRating =
-      reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length;
+    await review.remove();
 
-    res.json({ averageRating: avgRating });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-};
-
-// Like a review
-exports.likeReview = async (req, res) => {
-  try {
-    const review = await Review.findById(req.params.id);
-    if (!review) return res.status(404).json({ message: 'Review not found' });
-
-    if (!review.likes.includes(req.user.id)) {
-      review.likes.push(req.user.id);
-      await review.save();
-    }
-
-    res.status(200).json({ message: 'Review liked' });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-};
-
-// Business owner reply to a review
-exports.replyToReview = async (req, res) => {
-  try {
-    const review = await Review.findById(req.params.id);
-    if (!review) return res.status(404).json({ message: 'Review not found' });
-
-    if (review.business.toString() !== req.user.business.toString()) {
-      return res.status(403).json({ message: 'You do not have permission to reply to this review' });
-    }
-
-    review.reply = req.body.reply;
-    await review.save();
-
-    res.status(200).json({ message: 'Reply added', review });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-};
-
-module.exports = { 
-  createReview, 
-  getReviewsForBusiness, 
-  getBusinessRating,
-  likeReview,
-  replyToReview
-};
+    res.json({ 
+        success: true,
+        message: 'Review deleted successfully' 
+    });
+});

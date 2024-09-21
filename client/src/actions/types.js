@@ -10,17 +10,22 @@ export const REGISTER_REQUEST = 'REGISTER_REQUEST';
 export const REGISTER_SUCCESS = 'REGISTER_SUCCESS';
 export const REGISTER_FAIL = 'REGISTER_FAIL';
 
+// OTP verification 
+export const OTP_REQUEST = 'OTP_REQUEST';
+export const OTP_VERIFIED = 'OTP_VERIFIED';
+export const OTP_FAILED = 'OTP_FAILED';
+
 // Password reset
 export const PASSWORD_RESET_REQUEST = 'PASSWORD_RESET_REQUEST';
 export const PASSWORD_RESET_SUCCESS = 'PASSWORD_RESET_SUCCESS';
 export const PASSWORD_RESET_FAIL = 'PASSWORD_RESET_FAIL';
 
-// OTP
-export const SEND_OTP_REQUEST = 'SEND_OTP_REQUEST';
-export const SEND_OTP_SUCCESS = 'SEND_OTP_SUCCESS';
-export const SEND_OTP_FAIL = 'SEND_OTP_FAIL';
-export const OTP_SENT = 'OTP_SENT';
-export const OTP_FAILED = 'OTP_FAILED';
+// // OTP
+// export const SEND_OTP_REQUEST = 'SEND_OTP_REQUEST';
+// export const SEND_OTP_SUCCESS = 'SEND_OTP_SUCCESS';
+// export const SEND_OTP_FAIL = 'SEND_OTP_FAIL';
+// export const OTP_SENT = 'OTP_SENT';
+// export const OTP_FAILED = 'OTP_FAILED';
 
 // User data
 export const USER_LOADED = 'USER_LOADED';

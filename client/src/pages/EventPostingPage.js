@@ -9,25 +9,50 @@ const EventPostingPage = () => {
   const [date, setDate] = useState('');
   const [location, setLocation] = useState('');
   const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const dispatch = useDispatch();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    setLoading(true);
+    setError('');
+    setSuccessMessage('');
+
     const formData = new FormData();
     formData.append('title', title);
     formData.append('description', description);
     formData.append('date', date);
     formData.append('location', location);
-    formData.append('image', image);
+    if (image) {
+      formData.append('image', image);
+    }
 
-    dispatch(postEvent(formData));
+    try {
+      await dispatch(postEvent(formData));
+      setSuccessMessage('Event posted successfully!');
+      // Reset form fields after successful submission
+      setTitle('');
+      setDescription('');
+      setDate('');
+      setLocation('');
+      setImage(null);
+    } catch (err) {
+      setError('Failed to post event. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="event-posting-container">
       <h2>Post an Event</h2>
+      {loading && <p>Loading...</p>}
+      {error && <p className="error">{error}</p>}
+      {successMessage && <p className="success">{successMessage}</p>}
+      
       <form onSubmit={handleSubmit}>
         <label>Event Title:</label>
         <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />

@@ -1,15 +1,32 @@
 const mongoose = require('mongoose');
 
-const reviewSchema = new mongoose.Schema({
-  business: { type: mongoose.Schema.Types.ObjectId, ref: 'Business', required: true },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  rating: { type: Number, required: true },
-  comment: { type: String, required: true },
-  image: { type: String }, // Field for image upload
-  reply: { type: String }, // Business owner's reply to the review
-  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Track likes for the review
-}, { timestamps: true });
+const reviewSchema = mongoose.Schema({
+    business: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Business',
+        required: true,
+        index : true // indexing the field
+    },
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        index : true // indexing the field
+    },
+    rating: {
+        type: Number,
+        required: true,
+        min: 1,
+        max: 5
+    },
+    comment: {
+        type: String,
+        required: true,
+        minlength: 5, // Minimum length for comment
+        maxlength: 500 // Maximum length for comment
+    }
+}, {
+    timestamps: true
+});
 
-const Review = mongoose.model('Review', reviewSchema);
-
-module.exports = Review;
+module.exports = mongoose.model('Review', reviewSchema);

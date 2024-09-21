@@ -1,60 +1,128 @@
 const Business = require('../models/Business');
+const User = require('../models/User');
+const { sendEmailNotification, createInAppNotification } = require('./notificationController');
+const asyncHandler = require('express-async-handler');
 
-// Create or Update Business
-exports.createOrUpdateBusiness = async (req, res) => {
-  try {
-    const { name, description, category } = req.body;
-    const logo = req.file ? req.file.path : null; // Handle file upload (logo)
-    
-    let business;
-    if (req.params.id) {
-      // Update existing business
-      business = await Business.findById(req.params.id);
-      if (!business) return res.status(404).json({ message: 'Business not found' });
-
-      business.name = name;
-      business.description = description;
-      business.category = category;
-      if (logo) business.logo = logo;
-
-      await business.save();
-      return res.status(200).json(business);
-    } else {
-      // Create new business
-      business = new Business({
+// Create a new business
+exports.addBusiness = asyncHandler(async (req, res) => {
+    const { name, description, address } = req.body;
+    const newBusiness = new Business({
         name,
         description,
-        category,
-        logo,
-        owner: req.user.id
-      });
-      await business.save();
-      return res.status(201).json(business);
-    }
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-};
+        address,
+        owner: req.user.id,
+    });
+    const business = await newBusiness.save();
+    res.status(201).json(business);
+});
 
-// Fetch all businesses with optional category filtering
-exports.getBusinesses = async (req, res) => {
-  try {
+// Get all businesses
+exports.getBusinesses = asyncHandler(async (req, res) => {
     const { category } = req.query;
-    const filter = category ? { category } : {};
-    
-    const businesses = await Business.find(filter);
-    return res.status(200).json(businesses);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-};
+    const businesses = category ? await Business.find({ category }) : await Business.find({});
+    res.json(businesses);
+});
 
-// Fetch all available categories (unique)
-exports.getCategories = async (req, res) => {
-  try {
-    const categories = await Business.distinct('category');
-    return res.status(200).json(categories);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-};
+// Update a business
+exports.updateBusiness = asyncHandler(async (req, res) => {
+    const business = await Business.findById(req.params.id);
+
+    if (business.owner.toString() !== req.user.id) {
+        return res.status(401).json({ message: 'Not authorized to update this business' });
+    }
+
+    const { name, description, address } = req.body;
+    business.name = name || business.name;
+    business.description = description || business.description;
+    business.address = address || business.address;
+
+    const updatedBusiness = await business.save();
+    res.json(updatedBusiness);
+});
+
+// Delete a business
+exports.deleteBusiness = asyncHandler(async (req, res) => {
+    const business = await Business.findById(req.params.id);
+
+    if (business.owner.toString() !== req.user.id) {
+        return res.status(401).json({ message: 'Not authorized to delete this business' });
+    }
+
+    await business.remove();
+    res.json({ message: 'Business removed' });
+});
+
+// Verify a business
+exports.verifyBusiness = asyncHandler(async (req, res) => {
+    const businessId = req.params.id;
+    const business = await Business.findById(businessId);
+
+    if (!business) {
+        return res.status(404).json({ error: 'Business not found' });
+    }
+
+    business.verificationStatus = 'Pending';
+    await business.save();
+    res.json({ message: 'Verification request submitted successfully' });
+});
+
+// Get business by ID
+exports.getBusinessById = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const business = await Business.findById(id);
+
+    if (!business) {
+        return res.status(404).json({ error: 'Business not found' });
+    }
+
+    // Increment views count
+    business.views += 1;
+    await business.save();
+    res.json(business);
+});
+
+// Add a review
+exports.addReview = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const business = await Business.findById(id);
+
+    if (!business) {
+        return res.status(404).json({ error: 'Business not found' });
+    }
+
+    const newReview = {
+        user: req.user.id,
+        rating: req.body.rating,
+        comment: req.body.comment,
+    };
+
+    business.reviews.push(newReview);
+    await business.save();
+
+    // Send notification to business owner
+    const businessOwner = await User.findById(business.owner);
+    if (businessOwner) {
+        const message = `Your business "${business.name}" has received a new review.`;
+        await sendEmailNotification(businessOwner.email, 'New Review', message);
+        await createInAppNotification(businessOwner._id, message);
+    }
+
+    res.json(business);
+});
+
+// Update business customization
+exports.updateBusinessCustomization = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { theme, additionalDetails } = req.body;
+
+    const business = await Business.findById(id);
+    if (!business) {
+        return res.status(404).json({ message: 'Business not found' });
+    }
+
+    business.theme = theme;
+    business.additionalDetails = additionalDetails;
+    await business.save();
+
+    res.status(200).json({ message: 'Customization updated successfully' });
+});

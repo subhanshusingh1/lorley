@@ -1,135 +1,114 @@
 import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { registerUser as register } from '../actions/authActions';
-import api from '../utils/api';
-import './RegisterPage.css';
+import { useNavigate } from 'react-router-dom';
 
 const RegisterPage = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     mobile: '',
-    otp: '',
   });
 
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [otpOption, setOtpOption] = useState('email');
-  const [otpSent, setOtpSent] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const sendOtp = async () => {
-    try {
-      await api.post('/auth/send-otp', { 
-        [otpOption]: formData[otpOption]
-      });
-      setOtpSent(true);
-    } catch (error) {
-      console.error('Error sending OTP:', error);
-      alert('Failed to send OTP. Please try again.');
-    }
-  };
-
-  const submitHandler = (e) => {
+  const submitHandler = async (e) => {
     e.preventDefault();
     if (formData.password !== confirmPassword) {
       alert('Passwords do not match');
       return;
     }
-    const otpData = otpOption === 'email' ? { email: formData.email } : { mobile: formData.mobile };
-    dispatch(register({ ...formData, otpOption, ...otpData }));
+
+    const response = await dispatch(register(formData));
+
+    if (response.success) {
+      navigate('/verify-otp'); // Redirect to OTP verification page
+    } else {
+      alert('Registration failed. Please try again.');
+    }
   };
 
   return (
-    <div className="register-page">
-      <h2>Create Your Account</h2>
-      <form onSubmit={submitHandler}>
-        <div className="form-group">
-          <label>Name:</label>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      <h2 className="text-2xl font-bold mb-4">Create Your Account</h2>
+      <form onSubmit={submitHandler} className="bg-white shadow-md rounded px-8 py-6 w-full max-w-md">
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2">Name:</label>
           <input
             type="text"
             name="name"
             value={formData.name}
             onChange={handleChange}
             required
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           />
         </div>
 
-        <div className="form-group">
-          <label>Email:</label>
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2">Email:</label>
           <input
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
             required
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           />
         </div>
 
-        <div className="form-group">
-          <label>Mobile Number:</label>
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2">Mobile Number:</label>
           <input
             type="text"
             name="mobile"
             value={formData.mobile}
             onChange={handleChange}
             required
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           />
         </div>
 
-        <div className="form-group">
-          <label>Password:</label>
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2">Password:</label>
           <input
             type="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
             required
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           />
         </div>
 
-        <div className="form-group">
-          <label>Confirm Password:</label>
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2">Confirm Password:</label>
           <input
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           />
         </div>
 
-        <div className="form-group">
-          <label>Receive OTP via:</label>
-          <select value={otpOption} onChange={(e) => setOtpOption(e.target.value)}>
-            <option value="email">Email</option>
-            <option value="mobile">Mobile</option>
-          </select>
-          <button type="button" onClick={sendOtp}>
-            Send OTP
-          </button>
-        </div>
-
-        {otpSent && (
-          <div className="form-group">
-            <label>OTP:</label>
-            <input
-              type="text"
-              name="otp"
-              value={formData.otp}
-              onChange={handleChange}
-              required
-            />
-          </div>
-        )}
-
-        <button type="submit">Register</button>
+        <button
+          type="submit"
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+        >
+          Register
+        </button>
       </form>
-      <p>Already have an account? <a href="/login">Login here</a></p>
+      <p className="mt-4">
+        Already have an account? <a href="/login" className="text-blue-500">Login here</a>
+      </p>
     </div>
   );
 };

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-
 import api from '../utils/api';
 import './AdminDashboardPage.css';
 
@@ -8,7 +7,7 @@ const AdminDashboardPage = () => {
   const dispatch = useDispatch();
 
   const businessList = useSelector((state) => state.businessList);
-  const { loading, error, businesses } = businessList;
+  const { loading: loadingBusinesses, error, businesses } = businessList;
 
   const [users, setUsers] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -17,6 +16,8 @@ const AdminDashboardPage = () => {
     description: '',
     logo: '',
   });
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingReviews, setLoadingReviews] = useState(true);
 
   useEffect(() => {
     dispatch(listBusinesses());
@@ -24,24 +25,35 @@ const AdminDashboardPage = () => {
   }, [dispatch]);
 
   const fetchUsersAndReviews = async () => {
-    const userData = await api.get('/users');
-    const reviewData = await api.get('/reviews');
-    setUsers(userData.data);
-    setReviews(reviewData.data);
+    try {
+      const userData = await api.get('/users');
+      const reviewData = await api.get('/reviews');
+      setUsers(userData.data);
+      setReviews(reviewData.data);
+    } catch (error) {
+      console.error('Error fetching users and reviews', error);
+    } finally {
+      setLoadingUsers(false);
+      setLoadingReviews(false);
+    }
   };
 
-  const handleCreate = (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
-    dispatch(createBusiness(newBusiness));
+    if (!newBusiness.name || !newBusiness.description || !newBusiness.logo) {
+      alert('Please fill out all fields.');
+      return;
+    }
+    await dispatch(createBusiness(newBusiness));
     setNewBusiness({ name: '', description: '', logo: '' }); // Reset form
   };
 
-  const handleUpdate = (id) => {
-    dispatch(updateBusiness(id, newBusiness));
+  const handleUpdate = async (id) => {
+    await dispatch(updateBusiness(id, newBusiness));
   };
 
-  const handleDeleteBusiness = (id) => {
-    dispatch(deleteBusiness(id));
+  const handleDeleteBusiness = async (id) => {
+    await dispatch(deleteBusiness(id));
   };
 
   const handleDeleteUser = async (id) => {
@@ -58,7 +70,7 @@ const AdminDashboardPage = () => {
     <div className="admin-dashboard">
       <h2>Admin Dashboard</h2>
       {error && <p className="error">{error}</p>}
-      {loading && <p>Loading...</p>}
+      {loadingBusinesses && <p>Loading businesses...</p>}
 
       <section>
         <h3>Manage Businesses</h3>
@@ -104,26 +116,34 @@ const AdminDashboardPage = () => {
 
       <section>
         <h3>Users</h3>
-        <ul>
-          {users.map((user) => (
-            <li key={user._id}>
-              {user.name}
-              <button onClick={() => handleDeleteUser(user._id)}>Delete</button>
-            </li>
-          ))}
-        </ul>
+        {loadingUsers ? (
+          <p>Loading users...</p>
+        ) : (
+          <ul>
+            {users.map((user) => (
+              <li key={user._id}>
+                {user.name}
+                <button onClick={() => handleDeleteUser(user._id)}>Delete</button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section>
         <h3>Reviews</h3>
-        <ul>
-          {reviews.map((review) => (
-            <li key={review._id}>
-              {review.text}
-              <button onClick={() => handleDeleteReview(review._id)}>Delete</button>
-            </li>
-          ))}
-        </ul>
+        {loadingReviews ? (
+          <p>Loading reviews...</p>
+        ) : (
+          <ul>
+            {reviews.map((review) => (
+              <li key={review._id}>
+                {review.text}
+                <button onClick={() => handleDeleteReview(review._id)}>Delete</button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );

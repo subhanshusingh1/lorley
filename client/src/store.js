@@ -1,17 +1,25 @@
 import { createStore, applyMiddleware, combineReducers } from 'redux';
 import thunk from 'redux-thunk';
 import { composeWithDevTools } from 'redux-devtools-extension';
-import businessReducer from './reducers/businessReducer';
-import adminReducer from './reducers/adminReducer';
+import authReducer from './reducers/authReducer';
+// import businessReducer from './reducers/businessReducer';
+// import adminReducer from './reducers/adminReducer';
 
+// combine reducers
 const rootReducer = combineReducers({
-  business: businessReducer,
-  admin: adminReducer,
+  auth:authReducer,
+  // business: businessReducer,
+  // admin: adminReducer,
 });
+
+// Initial state and middleware
+const initialState = {};
+const middleware = [thunk];
 
 const store = createStore(
   rootReducer,
-  composeWithDevTools(applyMiddleware(thunk))
+  initialState,
+  composeWithDevTools(applyMiddleware(...middleware))
 );
 
 export default store;
