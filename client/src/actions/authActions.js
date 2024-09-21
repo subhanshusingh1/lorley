@@ -9,7 +9,13 @@ import {
   OTP_REQUEST,
   OTP_VERIFIED,
   OTP_FAILED,
-  LOGOUT
+  LOGOUT,
+  USER_FORGOT_PASSWORD_REQUEST, 
+  USER_FORGOT_PASSWORD_SUCCESS, 
+  USER_FORGOT_PASSWORD_FAIL,
+  USER_RESET_PASSWORD_REQUEST,
+  USER_RESET_PASSWORD_SUCCESS,
+  USER_RESET_PASSWORD_FAIL
 } from './types';
 
 
@@ -17,7 +23,7 @@ import {
 export const registerUser = ({ name, email, mobile, password }) => async (dispatch) => {
   try {
     dispatch({ type: REGISTER_REQUEST });
-    const res = await axios.post('/api/auth/register', { name, email, mobile, password });
+    const res = await axios.post('/api/v1/users/register', { name, email, mobile, password });
     
     if (res.data.success) {
       dispatch({
@@ -46,7 +52,7 @@ export const registerUser = ({ name, email, mobile, password }) => async (dispat
 export const verifyOtp = (otp) => async (dispatch) => {
   try {
     dispatch({ type: OTP_REQUEST });
-    const res = await axios.post('/api/auth/verify-otp', { otp });
+    const res = await axios.post('/api/v1/users/verify-otp', { otp });
     
     if (res.data.success) {
       dispatch({
@@ -75,7 +81,7 @@ export const verifyOtp = (otp) => async (dispatch) => {
 export const loginUser = (emailOrMobile, password) => async (dispatch) => {
   try {
     dispatch({ type: LOGIN_REQUEST });
-    const res = await axios.post('/api/auth/login', { emailOrMobile, password });
+    const res = await axios.post('/api/v1/users/login', { emailOrMobile, password });
     
     if (res.data.success) {
       dispatch({
@@ -106,3 +112,35 @@ export const logout = () => {
     type: LOGOUT,
   };
 };
+
+// Forgot Password
+export const forgotPassword = (email) => async (dispatch) => {
+  try {
+      dispatch({ type: USER_FORGOT_PASSWORD_REQUEST });
+      const config = { headers: { 'Content-Type': 'application/json' } };
+      await axios.post('/api/v1/users/forgot-password', { email }, config);
+      dispatch({ type: USER_FORGOT_PASSWORD_SUCCESS });
+  } catch (error) {
+      dispatch({
+          type: USER_FORGOT_PASSWORD_FAIL,
+          payload: error.response?.data?.message || error.message,
+      });
+  }
+};
+
+
+// Reset Password 
+export const resetPassword = (email, otp, newPassword) => async (dispatch) => {
+  try {
+      dispatch({ type: USER_RESET_PASSWORD_REQUEST });
+      const config = { headers: { 'Content-Type': 'application/json' } };
+      await axios.post('/api/v1/users/reset-password', { email, otp, newPassword }, config);
+      dispatch({ type: USER_RESET_PASSWORD_SUCCESS });
+  } catch (error) {
+      dispatch({
+          type: USER_RESET_PASSWORD_FAIL,
+          payload: error.response?.data?.message || error.message,
+      });
+  }
+};
+

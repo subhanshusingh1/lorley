@@ -8,7 +8,13 @@ import {
   LOGIN_REQUEST, 
   LOGIN_SUCCESS, 
   LOGIN_FAIL,
-  LOGOUT
+  LOGOUT,
+  USER_FORGOT_PASSWORD_REQUEST,
+  USER_FORGOT_PASSWORD_SUCCESS,
+  USER_FORGOT_PASSWORD_FAIL,
+  USER_RESET_PASSWORD_REQUEST,
+  USER_RESET_PASSWORD_SUCCESS,
+  USER_RESET_PASSWORD_FAIL
 } from '../actions/types';
 
 const initialState = {
@@ -83,6 +89,22 @@ export default function (state = initialState, action) {
         error: null,
         message: null,
       };
+
+
+    case USER_FORGOT_PASSWORD_REQUEST:
+        return { loading: true };
+    case USER_FORGOT_PASSWORD_SUCCESS:
+        return { loading: false, success: true };
+    case USER_FORGOT_PASSWORD_FAIL:
+        return { loading: false, error: action.payload };  
+
+    case USER_RESET_PASSWORD_REQUEST:
+          return { loading: true };
+    case USER_RESET_PASSWORD_SUCCESS:
+          return { loading: false, success: true };
+    case USER_RESET_PASSWORD_FAIL:
+          return { loading: false, error: action.payload };
+  
 
     default:
       return state;

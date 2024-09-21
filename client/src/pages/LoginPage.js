@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { loginUser } from '../actions/authActions';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // Import Link
 
 const LoginPage = () => {
   const [loginMethod, setLoginMethod] = useState('password');
@@ -26,8 +26,8 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      <h2 className="text-2xl font-bold mb-6">Login to Your Account</h2>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800 p-4"> {/* Changed bg-gray-100 to bg-gray-800 */}
+      <h2 className="text-2xl font-bold mb-6 text-white">Login to Your Account</h2> {/* Added text-white */}
       <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 py-6 w-full max-w-md">
         <div className="mb-4">
           <label className="block text-gray-700 text-sm font-bold mb-2">Email</label>
@@ -76,6 +76,12 @@ const LoginPage = () => {
         >
           {loginMethod === 'password' ? 'Login with Password' : 'Login with OTP'}
         </button>
+
+        {loginMethod === 'password' && (
+          <div className="mt-4 text-center">
+            <Link to="/forgot-password" className="text-blue-500 hover:underline">Forgot Password?</Link> {/* Forgot Password link */}
+          </div>
+        )}
       </form>
     </div>
   );
