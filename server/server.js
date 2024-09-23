@@ -20,7 +20,15 @@ const app = express();
 
 // security middleware
 app.use(helmet());
-app.use(cors());
+// app.use(cors());
+
+// Use CORS middleware
+app.use(cors({
+  origin: 'http://localhost:3000', // Frontend URL
+  methods: 'GET,POST,PUT,DELETE',
+  credentials: true,
+}));
+
 
 // parse json 
 app.use(express.json());
@@ -31,7 +39,7 @@ app.use(cookieParser());
 
 // Routes
 app.use('/api/v1/users', userRoutes);
-app.use('/api/v1/businesses', businessRoutes);
+app.use('/api/v1/business', businessRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/jobs', jobRoutes);
 app.use('/api/v1/news', newsRoutes);

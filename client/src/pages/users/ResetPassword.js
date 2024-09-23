@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { resetPassword } from '../actions/authActions';
+import { resetPassword } from '../../actions/authActions';
 import { useNavigate } from 'react-router-dom';
+import { toast, ToastContainer } from 'react-toastify'; // Import toast and ToastContainer
+import 'react-toastify/dist/ReactToastify.css'; // Import CSS for toast notifications
 
 const ResetPassword = () => {
     const [email, setEmail] = useState('');
@@ -11,7 +13,7 @@ const ResetPassword = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const resetPasswordHandler = () => {
+    const resetPasswordHandler = async () => {
         if (!email || !otp || !newPassword) {
             setError('All fields are required.');
             return;
@@ -24,18 +26,25 @@ const ResetPassword = () => {
             setError('Please Enter Correct OTP.');
             return;
         }
-        // if (newPassword.length < 8) {
-        //     setError('Password must be at least 8 characters long.');
-        //     return;
-        // }
+        if (newPassword.length < 8) {
+            setError('Password must be at least 8 characters long.');
+            return;
+        }
 
         setError(''); // Clear any previous error
-        dispatch(resetPassword(email, otp, newPassword));
-        navigate('/login'); // Redirect to login page after success
+        const response = await dispatch(resetPassword(email, otp, newPassword));
+
+        if (response.success) {
+            toast.success('Password reset successfully!'); // Show success notification
+            navigate('/login'); // Redirect to login page after success
+        } else {
+            toast.error(response.message || 'Failed to reset password. Please try again.'); // Show error notification
+        }
     };
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800 p-4">
+            <ToastContainer /> {/* Add ToastContainer here */}
             <div className="bg-white shadow-md rounded px-8 py-6 w-full max-w-md">
                 <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">Reset Password</h2>
                 {error && <p className="text-red-500 text-sm mb-4">{error}</p>}

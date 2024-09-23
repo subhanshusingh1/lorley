@@ -1,14 +1,15 @@
 // import modules
 const mongoose = require("mongoose");
-const validator = require("validator");
+const validate = require("validator");
 
 const OtpSchema = new mongoose.Schema({
     email: {
         type: String,
-        required: [true, 'Please Enter Your Email'],
+        required: [true, 'Please Enter Your Email!!!'],
         lowercase: true,
-        validate: [validator.isEmail, 'Please Provide Correct Email'],
-        index : true // for faster lookup
+        validate: [validate.isEmail, 'Please Provide Valid Email'],
+        index: true,
+        unique: true
     },
     otp: {
         type: String,

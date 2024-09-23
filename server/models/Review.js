@@ -5,13 +5,13 @@ const reviewSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Business',
         required: true,
-        index : true // indexing the field
+        index: true // indexing the field
     },
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
-        index : true // indexing the field
+        index: true // indexing the field
     },
     rating: {
         type: Number,
@@ -24,7 +24,16 @@ const reviewSchema = mongoose.Schema({
         required: true,
         minlength: 5, // Minimum length for comment
         maxlength: 500 // Maximum length for comment
-    }
+    },
+    images: [{
+        type: String, // URL for uploaded images
+        validate: {
+            validator: function (value) {
+                return value ? validator.isURL(value) : true; // Validate each image URL
+            },
+            message: 'Invalid URL for image',
+        },
+    }]
 }, {
     timestamps: true
 });

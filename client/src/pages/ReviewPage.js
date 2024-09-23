@@ -1,94 +1,122 @@
 import React, { useState, useEffect } from 'react';
-import './ReviewPage.css';
+import { FaStar } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
-import { postReview } from '../utils/api';
-import ReviewActions from '../components/ReviewActions';
+import { useNavigate } from 'react-router-dom'; // For navigation
+import { submitReview } from '../actions/reviewActions';
 
-const ReviewPage = ({ businessId }) => {
-  const [reviewText, setReviewText] = useState('');
-  const [rating, setRating] = useState(1);
-  const [image, setImage] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+const Review = ({ businessId, businessName, userName }) => {
+    const dispatch = useDispatch();
+    const navigate = useNavigate(); // For redirecting after submission
+    const { success, error } = useSelector((state) => state.review);
 
-  const dispatch = useDispatch();
-  const reviews = useSelector((state) => state.reviews); // Assuming reviews are stored in Redux state
+    const [rating, setRating] = useState(0);
+    const [hover, setHover] = useState(0); // For half-star hover effect
+    const [description, setDescription] = useState('');
+    const [images, setImages] = useState([]);
+    const [successMessage, setSuccessMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+    const handleImageChange = (e) => {
+        const files = Array.from(e.target.files);
+        setImages(files);
+    };
 
-    const formData = new FormData();
-    formData.append('reviewText', reviewText);
-    formData.append('rating', rating);
-    formData.append('image', image);
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const formData = new FormData();
+        formData.append('rating', rating);
+        formData.append('comment', description);
+        images.forEach((image) => {
+            formData.append('images', image);
+        });
 
-    try {
-      await dispatch(postReview(businessId, formData));
-      alert('Review submitted!');
-      setReviewText('');
-      setRating(1);
-      setImage(null);
-    } catch (error) {
-      setError('Error submitting review. Please try again.');
-      console.error('Error submitting review', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+        // Dispatch the submitReview action
+        dispatch(submitReview({ businessId, formData }));
+    };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImage(file);
-    }
-  };
+    // Update success and error messages based on Redux state
+    useEffect(() => {
+        if (success) {
+            setSuccessMessage('Your review has been successfully submitted!');
+            setDescription('');
+            setRating(0);
+            setImages([]);
 
-  return (
-    <div className="review-page">
-      <h2>Submit a Review</h2>
-      {error && <p className="error">{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Write a Review:</label>
-          <textarea
-            value={reviewText}
-            onChange={(e) => setReviewText(e.target.value)}
-            required
-          />
+            setErrorMessage(''); // Clear error message
+
+            // Redirect to the business profile page after a short delay
+            setTimeout(() => {
+                navigate(`/business/profile/${businessId}`); // Redirect to business profile
+            }, 2000); // Redirect after 2 seconds
+        }
+
+        if (error) {
+            setErrorMessage(error); // Set error message from Redux
+            setSuccessMessage(''); // Clear success message
+        }
+    }, [success, error, businessId, navigate]);
+
+    return (
+        <div className="flex justify-center items-center min-h-screen bg-gray-100">
+            <div className="p-6 bg-white shadow-lg rounded-lg max-w-lg w-full">
+                <h1 className="text-3xl font-bold mb-6 text-center">{businessName}</h1> {/* Business Name on top */}
+                <h2 className="text-2xl font-semibold mb-6 text-center">Leave a Review</h2>
+
+                <div className="mb-4 text-center">
+                    <span className="font-semibold">User: {userName}</span>
+                </div>
+
+                <div className="flex justify-center mb-6">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                        <FaStar
+                            key={star}
+                            className={`cursor-pointer text-2xl ${
+                                star <= (hover || rating) ? 'text-yellow-500' : 'text-gray-400'
+                            }`}
+                            onClick={() => setRating(star)}
+                            onMouseEnter={() => setHover(star)}
+                            onMouseLeave={() => setHover(0)}
+                        />
+                    ))}
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <textarea
+                        className="w-full border rounded-lg p-4 mb-4 h-28"
+                        placeholder="Write your review here..."
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        required
+                    ></textarea>
+
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Upload Images</label>
+                    <input
+                        type="file"
+                        multiple
+                        onChange={handleImageChange}
+                        accept="image/*"
+                        className="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100
+                        mb-4"
+                    />
+
+                    <button
+                        type="submit"
+                        className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition"
+                    >
+                        Submit Review
+                    </button>
+                </form>
+
+                {successMessage && <p className="text-green-500 text-center mt-4">{successMessage}</p>}
+                {errorMessage && <p className="text-red-500 text-center mt-4">{errorMessage}</p>}
+            </div>
         </div>
-        <div className="form-group">
-          <label>Rating:</label>
-          <select value={rating} onChange={(e) => setRating(Number(e.target.value))} required>
-            {[1, 2, 3, 4, 5].map((rate) => (
-              <option key={rate} value={rate}>{rate}</option>
-            ))}
-          </select>
-        </div>
-        <div className="form-group">
-          <label>Upload Image:</label>
-          <input type="file" onChange={handleImageChange} />
-          {image && <img src={URL.createObjectURL(image)} alt="Preview" className="image-preview" />}
-        </div>
-        <button type="submit" disabled={loading}>
-          {loading ? 'Submitting...' : 'Submit Review'}
-        </button>
-      </form>
-
-      <h2>Reviews for Business</h2>
-      <div className="reviews-list">
-        {reviews.map((review) => (
-          <div className="review-item" key={review._id}>
-            <p>{review.text}</p>
-            {review.image && <img src={review.image} alt="Review" />}
-            <p>Rating: {review.rating}</p>
-            <ReviewActions reviewId={review._id} isBusinessOwner={review.isBusinessOwner} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+    );
 };
 
-export default ReviewPage;
+export default Review;

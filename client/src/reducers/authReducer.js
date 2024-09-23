@@ -14,7 +14,10 @@ import {
   USER_FORGOT_PASSWORD_FAIL,
   USER_RESET_PASSWORD_REQUEST,
   USER_RESET_PASSWORD_SUCCESS,
-  USER_RESET_PASSWORD_FAIL
+  USER_RESET_PASSWORD_FAIL,
+  UPDATE_PROFILE_SUCCESS,
+  UPDATE_PROFILE_FAIL, 
+  DELETE_ACCOUNT_SUCCESS
 } from '../actions/types';
 
 const initialState = {
@@ -26,6 +29,8 @@ const initialState = {
   otpVerified: false,
   error: null,
   message: null,
+  success: false,
+  email: null, // Add email field to store user's email
 };
 
 export default function (state = initialState, action) {
@@ -35,10 +40,14 @@ export default function (state = initialState, action) {
     case REGISTER_REQUEST:
     case LOGIN_REQUEST:
     case OTP_REQUEST:
-      return {
-        ...state,
-        loading: true,
-        error: null, 
+    case USER_FORGOT_PASSWORD_REQUEST:
+    case USER_RESET_PASSWORD_REQUEST:
+      return { 
+        ...state, 
+        loading: true, 
+        error: null,
+        message: null,
+        success: false,
       };
 
     case REGISTER_SUCCESS:
@@ -49,17 +58,19 @@ export default function (state = initialState, action) {
         isAuthenticated: true,
         loading: false,
         user: payload.user,
+        success: true,
+        message: 'Operation successful!',
       };
 
     case REGISTER_FAIL:
     case LOGIN_FAIL:
+    case USER_FORGOT_PASSWORD_FAIL:
+    case USER_RESET_PASSWORD_FAIL:
       return {
         ...state,
-        token: null,
-        isAuthenticated: false,
         loading: false,
-        user: null,
         error: payload,
+        success: false,
       };
 
     case OTP_VERIFIED:
@@ -67,7 +78,9 @@ export default function (state = initialState, action) {
         ...state,
         otpVerified: true,
         loading: false,
-        message: payload,
+        success: true,
+        email: payload.email || state.email, // Store email if available in payload
+        message: payload.message || 'OTP verified successfully!',
       };
 
     case OTP_FAILED:
@@ -76,37 +89,53 @@ export default function (state = initialState, action) {
         otpVerified: false,
         loading: false,
         error: payload,
+        success: false,
       };
 
     case LOGOUT:
       return {
-        ...state,
-        token: null,
-        isAuthenticated: false,
-        user: null,
-        otpSent: false,
-        otpVerified: false,
-        error: null,
-        message: null,
+        ...initialState,
+        loading: false,
       };
 
-
-    case USER_FORGOT_PASSWORD_REQUEST:
-        return { loading: true };
     case USER_FORGOT_PASSWORD_SUCCESS:
-        return { loading: false, success: true };
-    case USER_FORGOT_PASSWORD_FAIL:
-        return { loading: false, error: action.payload };  
-
-    case USER_RESET_PASSWORD_REQUEST:
-          return { loading: true };
     case USER_RESET_PASSWORD_SUCCESS:
-          return { loading: false, success: true };
-    case USER_RESET_PASSWORD_FAIL:
-          return { loading: false, error: action.payload };
-  
+      return { 
+        ...state, 
+        loading: false, 
+        success: true,
+        message: payload?.message || 'Operation successful!',
+      };
+
+    case UPDATE_PROFILE_SUCCESS:
+      return {
+        ...state,
+        user: { ...state.user, ...payload },
+        loading: false,
+        success: true,
+        message: 'Profile updated successfully!',
+      };
+
+    case UPDATE_PROFILE_FAIL:
+      return {
+        ...state,
+        loading: false,
+        error: payload,
+        success: false,
+      };
+
+    case DELETE_ACCOUNT_SUCCESS:
+      return {
+        ...initialState,
+        loading: false,
+      };
 
     default:
       return state;
   }
 }
+
+
+
+ 
+   

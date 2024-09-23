@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { registerUser as register } from '../actions/authActions';
+import { registerUser as register } from '../../actions/authActions';
 import { useNavigate } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const RegisterPage = () => {
   const dispatch = useDispatch();
@@ -30,14 +32,16 @@ const RegisterPage = () => {
     const response = await dispatch(register(formData));
 
     if (response.success) {
-      navigate('/verify-otp'); // Redirect to OTP verification page
+      toast.success('OTP send to email for verification');
+      navigate('/verify-otp'); 
     } else {
-      alert('Registration failed. Please try again.');
+      toast.error('Registration failed. Please try again later')
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      <ToastContainer /> 
       <h2 className="text-2xl font-bold mb-4">Create Your Account</h2>
       <form onSubmit={submitHandler} className="bg-white shadow-md rounded px-8 py-6 w-full max-w-md">
         <div className="mb-4">

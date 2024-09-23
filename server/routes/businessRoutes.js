@@ -7,38 +7,42 @@ const {
     verifyBusiness, 
     getBusinessById, 
     addReview, 
-    updateBusinessCustomization 
+    updateBusinessCustomization, 
+    businessLogin 
 } = require('../controllers/businessController');
-const { protect } = require('../middlewares/authMiddleware');
+const { protectBusiness } = require('../middlewares/businessMiddleware');
 const multer = require('multer');
 
-// Multer setup for file uploads
+// Multer setup for file uploads (used for logos and verification documents)
 const upload = multer({ dest: 'uploads/' });
 
 const router = express.Router();
 
-// Route to get all businesses (with optional category filtering)
+// Route to get all businesses (with optional category and businessType filtering)
 router.get('/', getBusinesses);
 
-// Route to add a new business
-router.post('/', protect, addBusiness);
+// Route to register/add a new business (must be logged in as a user)
+router.post('/', protectBusiness, upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'photos', maxCount: 5 }]), addBusiness);
 
-// Route to update a business
-router.put('/:id', protect, updateBusiness);
+// Route for businesses to log in
+router.post('/login', businessLogin);
 
-// Route to delete a business
-router.delete('/:id', protect, deleteBusiness);
+// Route to update a business (only the business owner can update)
+router.put('/:id', protectBusiness, upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'photos', maxCount: 5 }]), updateBusiness);
 
-// Route to verify a business
-router.post('/:id/verify', protect, upload.single('document'), verifyBusiness);
+// Route to delete a business (only the business owner can delete)
+router.delete('/:id', protectBusiness, deleteBusiness);
 
-// Route to get a business by ID
+// Route to verify a business (uploading verification document)
+router.post('/:id/verify', protectBusiness, upload.single('document'), verifyBusiness);
+
+// Route to get a specific business by ID (view business details)
 router.get('/:id', getBusinessById);
 
-// Route to add a review to a business
-router.post('/:id/review', protect, addReview);
+// Route to add a review for a business (must be logged in)
+router.post('/:id/review', protectBusiness, addReview);
 
-// Route to update business customization
-router.put('/:id/customization', protect, updateBusinessCustomization);
+// Route to update business customization (only the business owner can customize)
+router.put('/:id/customization', protectBusiness, updateBusinessCustomization);
 
 module.exports = router;

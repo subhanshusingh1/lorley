@@ -1,7 +1,6 @@
 // Import modules
 const nodemailer = require('nodemailer');
 const mailgen = require('mailgen');
-// const generateOtp = require('./path-to-generateOtp'); 
 
 // Create transporter function
 const createTransport = () => {
@@ -44,13 +43,12 @@ const generateHtmlEmailContent = (emailContent) => {
 };
 
 // Main function to send email
-const sendMail = async (req, res, email, otp) => {
+const sendMail = async (email, otp) => {
     try {
-        // Generate OTP
-        // const otp = generateOtp(); // Uncomment this if OTP generation is needed
+        console.log('Sending email to:', email); // Debug log
 
-        if (!otp) {
-            return res.status(500).send({ message: 'Error Generating OTP' });
+        if (!email) {
+            throw new Error('No recipient email provided');
         }
 
         // Generate HTML email content
@@ -69,12 +67,12 @@ const sendMail = async (req, res, email, otp) => {
         // Send email
         await transport.sendMail(message);
 
-        // Respond with success
-        res.status(200).send({ message: 'OTP email sent successfully' });
+        return { success: true, message: 'OTP email sent successfully' };
     } catch (error) {
         console.error('Error sending email:', error);
-        res.status(500).send({ message: error.message || 'Error sending OTP email' });
+        throw new Error(error.message || 'Error sending OTP email');
     }
 };
+
 
 module.exports = sendMail;

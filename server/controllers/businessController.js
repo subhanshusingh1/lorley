@@ -1,29 +1,66 @@
 const Business = require('../models/Business');
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 const { sendEmailNotification, createInAppNotification } = require('./notificationController');
 const asyncHandler = require('express-async-handler');
+const jwt = require('jsonwebtoken');
 
-// Create a new business
+// Register a new business (done after user registration)
 exports.addBusiness = asyncHandler(async (req, res) => {
-    const { name, description, address } = req.body;
+    const { name, description, address, businessType, contactInfo, logo, openingHours, photos } = req.body;
+
     const newBusiness = new Business({
         name,
         description,
         address,
+        businessType,
+        contactInfo,
+        logo,
+        openingHours,
+        photos,
         owner: req.user.id,
     });
+
     const business = await newBusiness.save();
     res.status(201).json(business);
 });
 
-// Get all businesses
+// Login a business
+exports.businessLogin = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        return res.status(404).json({ message: 'Business not found' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
+        expiresIn: '1h',
+    });
+
+    res.json({ token, message: 'Login successful' });
+});
+
+// Get all businesses with filtering (category, type, etc.)
 exports.getBusinesses = asyncHandler(async (req, res) => {
-    const { category } = req.query;
-    const businesses = category ? await Business.find({ category }) : await Business.find({});
+    const { category, businessType } = req.query;
+
+    let filter = {};
+    if (category) filter.category = category;
+    if (businessType) filter.businessType = businessType;
+
+    const businesses = await Business.find(filter);
     res.json(businesses);
 });
 
-// Update a business
+// Update business details from dashboard (by business owner)
 exports.updateBusiness = asyncHandler(async (req, res) => {
     const business = await Business.findById(req.params.id);
 
@@ -31,16 +68,21 @@ exports.updateBusiness = asyncHandler(async (req, res) => {
         return res.status(401).json({ message: 'Not authorized to update this business' });
     }
 
-    const { name, description, address } = req.body;
+    const { name, description, address, businessType, contactInfo, logo, photos, openingHours } = req.body;
     business.name = name || business.name;
     business.description = description || business.description;
     business.address = address || business.address;
+    business.businessType = businessType || business.businessType;
+    business.contactInfo = contactInfo || business.contactInfo;
+    if (logo) business.logo = logo;
+    if (photos) business.photos = photos;
+    if (openingHours) business.openingHours = openingHours;
 
     const updatedBusiness = await business.save();
     res.json(updatedBusiness);
 });
 
-// Delete a business
+// Delete a business (by business owner)
 exports.deleteBusiness = asyncHandler(async (req, res) => {
     const business = await Business.findById(req.params.id);
 
@@ -52,7 +94,7 @@ exports.deleteBusiness = asyncHandler(async (req, res) => {
     res.json({ message: 'Business removed' });
 });
 
-// Verify a business
+// Verify a business (mark it as pending for verification)
 exports.verifyBusiness = asyncHandler(async (req, res) => {
     const businessId = req.params.id;
     const business = await Business.findById(businessId);
@@ -66,10 +108,10 @@ exports.verifyBusiness = asyncHandler(async (req, res) => {
     res.json({ message: 'Verification request submitted successfully' });
 });
 
-// Get business by ID
+// Get business by ID (including views increment and limited reviews)
 exports.getBusinessById = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const business = await Business.findById(id);
+    const business = await Business.findById(id).select('name logo photos openingHours address description contactInfo reviews');
 
     if (!business) {
         return res.status(404).json({ error: 'Business not found' });
@@ -78,10 +120,14 @@ exports.getBusinessById = asyncHandler(async (req, res) => {
     // Increment views count
     business.views += 1;
     await business.save();
-    res.json(business);
+
+    // Limit to the most recent 5 reviews (if you have a `createdAt` field in reviews)
+    const limitedReviews = business.reviews.slice(-5);
+    
+    res.json({ ...business.toObject(), reviews: limitedReviews });
 });
 
-// Add a review
+// Add a review to a business
 exports.addReview = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const business = await Business.findById(id);
@@ -94,6 +140,7 @@ exports.addReview = asyncHandler(async (req, res) => {
         user: req.user.id,
         rating: req.body.rating,
         comment: req.body.comment,
+        createdAt: new Date(), // Ensure to save the creation date if needed
     };
 
     business.reviews.push(newReview);
@@ -110,7 +157,7 @@ exports.addReview = asyncHandler(async (req, res) => {
     res.json(business);
 });
 
-// Update business customization
+// Update business customization (theme, additional details)
 exports.updateBusinessCustomization = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { theme, additionalDetails } = req.body;
@@ -120,8 +167,8 @@ exports.updateBusinessCustomization = asyncHandler(async (req, res) => {
         return res.status(404).json({ message: 'Business not found' });
     }
 
-    business.theme = theme;
-    business.additionalDetails = additionalDetails;
+    business.theme = theme || business.theme;
+    business.additionalDetails = additionalDetails || business.additionalDetails;
     await business.save();
 
     res.status(200).json({ message: 'Customization updated successfully' });

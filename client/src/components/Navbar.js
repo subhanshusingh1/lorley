@@ -1,37 +1,25 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../actions/authActions';
-
-// Import Font Awesome icons
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlusCircle, faSignInAlt } from '@fortawesome/free-solid-svg-icons';
+import { faPlusCircle, faSignInAlt, faUserCircle, faListAlt, faStar } from '@fortawesome/free-solid-svg-icons';
 
 const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isBusinessDropdownOpen, setIsBusinessDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector((state) => state.auth);
 
   const handleSearch = (e) => {
     e.preventDefault();
     navigate(`/business?search=${searchQuery}`);
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
-  };
-
-  // Toggle Business Dropdown
   const toggleBusinessDropdown = () => {
     setIsBusinessDropdownOpen(!isBusinessDropdownOpen);
   };
 
   return (
-    <nav className="bg-gray-900 fixed top-0 left-0 w-full z-50 p-4 shadow-lg">
+    <nav className="bg-gray-900 w-full z-50 p-4 shadow-lg">
       <div className="container mx-auto flex items-center justify-between space-x-12">
         {/* Logo */}
         <div className="navbar-logo">
@@ -61,38 +49,40 @@ const Navbar = () => {
 
         {/* Navigation Links */}
         <ul className="flex items-center space-x-8">
-          {!isAuthenticated && (
-            <>
-              <li>
-                <Link
-                  to="/login"
-                  className={`text-white hover:text-blue-500 ${
-                    location.pathname === '/login' ? 'font-bold' : ''
-                  }`}
-                >
-                  Login
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/register"
-                  className={`text-white hover:text-blue-500 ${
-                    location.pathname === '/register' ? 'font-bold' : ''
-                  }`}
-                >
-                  Register
-                </Link>
-              </li>
-            </>
-          )}
+          {/* Login and Register Links */}
+          <li>
+            <Link
+              to="/login"
+              className={`text-white hover:text-blue-500 ${location.pathname === '/login' ? 'font-bold' : ''}`}
+            >
+              Login
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/register"
+              className={`text-white hover:text-blue-500 ${location.pathname === '/register' ? 'font-bold' : ''}`}
+            >
+              Register
+            </Link>
+          </li>
+
+          {/* User Profile Link */}
+          <li>
+            <Link
+              to="/profile"
+              className={`text-white hover:text-blue-500 flex items-center space-x-2 ${location.pathname === '/profile' ? 'font-bold' : ''}`}
+            >
+              <FontAwesomeIcon icon={faUserCircle} />
+              <span>User Profile</span>
+            </Link>
+          </li>
 
           {/* Business Dropdown */}
           <li className="relative">
             <button
               onClick={toggleBusinessDropdown}
-              className={`text-white hover:text-blue-500 focus:outline-none flex items-center ${
-                isBusinessDropdownOpen ? 'font-bold' : ''
-              }`}
+              className={`text-white hover:text-blue-500 focus:outline-none flex items-center ${isBusinessDropdownOpen ? 'font-bold' : ''}`}
             >
               Business
               <svg
@@ -116,9 +106,9 @@ const Navbar = () => {
                   <Link
                     to="/business/register"
                     className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
-                    onClick={() => setIsBusinessDropdownOpen(false)} // Close dropdown when clicked
+                    onClick={() => setIsBusinessDropdownOpen(false)}
                   >
-                    <FontAwesomeIcon icon={faPlusCircle} /> {/* Add Business Icon */}
+                    <FontAwesomeIcon icon={faPlusCircle} />
                     <span>Add a Business</span>
                   </Link>
                 </li>
@@ -126,26 +116,65 @@ const Navbar = () => {
                   <Link
                     to="/business/login"
                     className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
-                    onClick={() => setIsBusinessDropdownOpen(false)} // Close dropdown when clicked
+                    onClick={() => setIsBusinessDropdownOpen(false)}
                   >
-                    <FontAwesomeIcon icon={faSignInAlt} /> {/* Login Icon */}
+                    <FontAwesomeIcon icon={faSignInAlt} />
                     <span>Login to Business Account</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/business/dashboard"
+                    className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                    onClick={() => setIsBusinessDropdownOpen(false)}
+                  >
+                    <span>Business Dashboard</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/business/profile"
+                    className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                    onClick={() => setIsBusinessDropdownOpen(false)}
+                  >
+                    <FontAwesomeIcon icon={faUserCircle} />
+                    <span>Business Profile</span>
                   </Link>
                 </li>
               </ul>
             )}
           </li>
 
-          {isAuthenticated && (
-            <li>
-              <button
-                onClick={handleLogout}
-                className="text-white hover:text-red-500"
-              >
-                Logout
-              </button>
-            </li>
-          )}
+          {/* Business Listing Link */}
+          <li>
+            <Link
+              to="/business/listing"
+              className={`text-white hover:text-blue-500 flex items-center space-x-2 ${location.pathname === '/business/listing' ? 'font-bold' : ''}`}
+            >
+              <FontAwesomeIcon icon={faListAlt} />
+              <span>Business Listing</span>
+            </Link>
+          </li>
+
+          {/* Add Review Link */}
+          <li>
+            <Link
+              to="/business/review"
+              className={`text-white hover:text-blue-500 flex items-center space-x-2 ${location.pathname === '/business/review' ? 'font-bold' : ''}`}
+            >
+              <FontAwesomeIcon icon={faStar} />
+              <span>Add Review</span>
+            </Link>
+          </li>
+
+          {/* Logout Link (Visible for testing) */}
+          <li>
+            <button
+              className="text-white hover:text-red-500"
+            >
+              Logout
+            </button>
+          </li>
         </ul>
       </div>
     </nav>

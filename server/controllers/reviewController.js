@@ -17,11 +17,15 @@ exports.createReview = asyncHandler(async (req, res) => {
         return res.status(404).json({ message: 'Business not found' });
     }
 
+    // Collect image URLs if provided
+    const images = req.files ? req.files.map(file => file.path) : []; // Assuming images are stored using a file upload middleware
+
     const review = new Review({
         user: req.user.id,
         business: req.params.businessId,
         rating,
         comment,
+        images, // Include images in the review
     });
 
     await review.save();
@@ -32,7 +36,7 @@ exports.createReview = asyncHandler(async (req, res) => {
     });
 });
 
-// Get Review
+// Get Reviews
 exports.getReviews = asyncHandler(async (req, res) => {
     const reviews = await Review.find({ business: req.params.businessId }).populate('user', 'name');
 

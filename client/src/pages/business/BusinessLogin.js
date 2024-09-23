@@ -14,8 +14,9 @@ const BusinessLogin = () => {
   const { loading, error, businessInfo } = businessLoginState;
 
   useEffect(() => {
+    // If user successfully logs in, redirect to business dashboard
     if (businessInfo) {
-      navigate('/dashboard'); // Redirect to dashboard on successful login
+      navigate('/dashboard'); // Redirect to the business dashboard page after login
     }
   }, [businessInfo, navigate]);
 
@@ -28,7 +29,7 @@ const BusinessLogin = () => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800 p-4">
       <div className="bg-white shadow-md rounded px-8 py-6 w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">Business Login</h2>
-        
+
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
         {loading && <p className="text-blue-500 text-sm mb-4">Loading...</p>}
 
@@ -41,6 +42,7 @@ const BusinessLogin = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              required
             />
           </div>
 
@@ -52,6 +54,7 @@ const BusinessLogin = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              required
             />
           </div>
 

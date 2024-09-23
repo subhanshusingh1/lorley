@@ -15,16 +15,27 @@ import {
   USER_FORGOT_PASSWORD_FAIL,
   USER_RESET_PASSWORD_REQUEST,
   USER_RESET_PASSWORD_SUCCESS,
-  USER_RESET_PASSWORD_FAIL
+  USER_RESET_PASSWORD_FAIL,
+  UPDATE_PROFILE_REQUEST, // Add this type
+  UPDATE_PROFILE_SUCCESS, 
+  UPDATE_PROFILE_FAIL, 
+  DELETE_ACCOUNT_REQUEST, // Add this type
+  DELETE_ACCOUNT_SUCCESS,
+  DELETE_ACCOUNT_FAIL 
 } from './types';
 
-
-// Register user
+// Register a User
 export const registerUser = ({ name, email, mobile, password }) => async (dispatch) => {
   try {
     dispatch({ type: REGISTER_REQUEST });
-    const res = await axios.post('/api/v1/users/register', { name, email, mobile, password });
     
+    console.log("Registering user with data:", { name, email, mobile, password });
+    
+    // Sending registration request to the backend
+    const res = await axios.post('http://localhost:5000/api/v1/users/register', { name, email, mobile, password });
+    
+    console.log("Response from backend:", res.data);
+
     if (res.data.success) {
       dispatch({
         type: REGISTER_SUCCESS,
@@ -39,6 +50,7 @@ export const registerUser = ({ name, email, mobile, password }) => async (dispat
       return { success: false, message: res.data.message || 'Registration failed.' };
     }
   } catch (error) {
+    console.error('Registration error:', error);
     const errorMessage = error.response?.data?.message || 'An error occurred. Please try again.';
     dispatch({
       type: REGISTER_FAIL,
@@ -48,11 +60,13 @@ export const registerUser = ({ name, email, mobile, password }) => async (dispat
   }
 };
 
+
+
 // Verify OTP
-export const verifyOtp = (otp) => async (dispatch) => {
+export const verifyOtp = (email, otp) => async (dispatch) => {
   try {
     dispatch({ type: OTP_REQUEST });
-    const res = await axios.post('/api/v1/users/verify-otp', { otp });
+    const res = await axios.post('http://localhost:5000/api/v1/users/verify-otp', { email, otp });
     
     if (res.data.success) {
       dispatch({
@@ -77,11 +91,12 @@ export const verifyOtp = (otp) => async (dispatch) => {
   }
 };
 
-// Password-based login
-export const loginUser = (emailOrMobile, password) => async (dispatch) => {
+
+// login User
+export const loginUser = (email, password) => async (dispatch) => {
   try {
     dispatch({ type: LOGIN_REQUEST });
-    const res = await axios.post('/api/v1/users/login', { emailOrMobile, password });
+    const res = await axios.post('http://localhost:5000/api/v1/users/login', { email, password });
     
     if (res.data.success) {
       dispatch({
@@ -113,34 +128,104 @@ export const logout = () => {
   };
 };
 
-// Forgot Password
+// Forgot Password Action
 export const forgotPassword = (email) => async (dispatch) => {
   try {
-      dispatch({ type: USER_FORGOT_PASSWORD_REQUEST });
-      const config = { headers: { 'Content-Type': 'application/json' } };
-      await axios.post('/api/v1/users/forgot-password', { email }, config);
-      dispatch({ type: USER_FORGOT_PASSWORD_SUCCESS });
+    dispatch({ type: USER_FORGOT_PASSWORD_REQUEST });
+    const config = { headers: { 'Content-Type': 'application/json' } };
+    
+    await axios.post('http://localhost:5000/api/v1/users/forgot-password', { email }, config);
+    
+    dispatch({ type: USER_FORGOT_PASSWORD_SUCCESS });
+
+    return { success: true, message: 'OTP sent to your email for verification!' };
   } catch (error) {
-      dispatch({
-          type: USER_FORGOT_PASSWORD_FAIL,
-          payload: error.response?.data?.message || error.message,
-      });
+    dispatch({
+      type: USER_FORGOT_PASSWORD_FAIL,
+      payload: error.response?.data?.message || error.message,
+    });
+
+    return { success: false, message: error.response?.data?.message || error.message };
   }
 };
-
 
 // Reset Password 
 export const resetPassword = (email, otp, newPassword) => async (dispatch) => {
   try {
       dispatch({ type: USER_RESET_PASSWORD_REQUEST });
       const config = { headers: { 'Content-Type': 'application/json' } };
-      await axios.post('/api/v1/users/reset-password', { email, otp, newPassword }, config);
+      await axios.post('http://localhost:5000/api/v1/users/reset-password', { email, otp, newPassword }, config);
       dispatch({ type: USER_RESET_PASSWORD_SUCCESS });
+      
+      return { success: true, message: 'Password reset successful!' }; 
   } catch (error) {
       dispatch({
           type: USER_RESET_PASSWORD_FAIL,
           payload: error.response?.data?.message || error.message,
       });
+      return { success: false, message: error.response?.data?.message || error.message };
   }
 };
 
+// Update User Profile
+export const updateUserProfile = (userData) => async (dispatch) => {
+  try {
+      dispatch({ type: UPDATE_PROFILE_REQUEST }); // Dispatch loading state
+      const response = await axios.put('http://localhost:5000/api/v1/users/update-profile', userData, {
+          headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${userData.token}` // Include the token if necessary
+          },
+      });
+      
+      dispatch({ type: UPDATE_PROFILE_SUCCESS, payload: response.data });
+      return { success: true, message: 'Profile updated successfully!' };
+  } catch (error) {
+      dispatch({
+          type: UPDATE_PROFILE_FAIL,
+          payload: error.response?.data?.message || error.message,
+      });
+      return { success: false, message: error.response?.data?.message || error.message };
+  }
+};
+
+// Delete User Account
+export const deleteUserAccount = (userId, password) => async (dispatch) => {
+  try {
+    dispatch({ type: DELETE_ACCOUNT_REQUEST }); // Dispatch loading state
+    await axios.delete(`http://localhost:5000/api/v1/users/profile/${userId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: { password },
+    });
+
+    dispatch({ type: DELETE_ACCOUNT_SUCCESS });
+    return { success: true, message: 'Account deleted successfully!' };
+  } catch (error) {
+    dispatch({
+      type: DELETE_ACCOUNT_FAIL,
+      payload: error.response?.data?.message || error.message,
+    });
+    return { success: false, message: error.response?.data?.message || error.message };
+  }
+};
+
+
+// Fetch user profile 
+export const fetchUserProfile = () => async (dispatch) => {
+  try {
+    dispatch({ type: UPDATE_PROFILE_REQUEST });
+
+    const { data } = await axios.get('http://localhost:5000/api/v1/users/profile'); // Adjust this API as per your backend
+
+    dispatch({ type: UPDATE_PROFILE_SUCCESS, payload: data });
+  } catch (error) {
+    dispatch({
+      type: UPDATE_PROFILE_FAIL,
+      payload: error.response && error.response.data.message
+        ? error.response.data.message
+        : error.message,
+    });
+  }
+};

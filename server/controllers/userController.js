@@ -4,6 +4,21 @@ const OTP = require('../models/otpModel');
 const generateOtp = require('../utils/otp'); 
 const sendMail = require('../utils/sendMail'); 
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
+
+// Configure Multer storage with Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'user_profiles', // The name of the folder in Cloudinary
+    allowed_formats: ['jpg', 'png', 'jpeg'], // Allowed image formats
+  },
+});
+
+// Create the multer upload middleware
+const upload = multer({ storage: storage });
 
 // Helper function to check OTP validity
 const isOtpValid = (otpDocument) => {
@@ -13,21 +28,21 @@ const isOtpValid = (otpDocument) => {
 
 
 // @Desc User Registration
-// @route POST /api/v1/users/
+// @route POST /api/v1/users
 // Controller for user registration
 exports.register = asyncHandler(async (req, res) => {
   const { name, email, password, mobile } = req.body;
 
   // Input validation
   if (!name || !email || !password || !mobile) {
-    return res.status(400).send({ message: 'All fields are required' });
+    return res.status(400).json({ message: 'All fields are required' });
   }
 
   // Check if the user already exists
   const userInfo = await User.findOne({ email });
 
   if (userInfo) {
-    return res.status(400).send({ message: 'User Already Exists!' });
+    return res.status(400).json({ message: 'User Already Exists!' });
   }
 
   // Register the new user
@@ -49,13 +64,13 @@ exports.register = asyncHandler(async (req, res) => {
   });
 
   // Send OTP to user via email
-  await sendMail(req, email, otp); // Send OTP using sendMail utility
+  await sendMail(email, otp); // Send OTP using sendMail utility
 
   // // Create JSON Web Token (JWT) and store it in cookies
   // const token = await user.createJwt(res);
 
   // Send success response
-  res.status(201).send({
+  res.status(201).json({
     success: true,
     data: {
       _id: user._id,
@@ -118,12 +133,12 @@ exports.verifyOtp = asyncHandler(async (req, res) => {
 // @Route POST /api/v1/users/login
 // Controller for user login
 exports.login = asyncHandler(async (req, res) => {
-  const { email, password, otp } = req.body;
+  const { email, password} = req.body;
 
-  // Validate email presence
-  if (!email) {
-    return res.status(400).send({ message: 'Email is required' });
-  }
+  // Validate email and password
+    if (!email || !password) {
+      return res.status(400).send({ message: 'Email and password are required' });
+    }
 
   // Find the user by email
   const user = await User.findOne({ email });
@@ -131,52 +146,30 @@ exports.login = asyncHandler(async (req, res) => {
     return res.status(400).send({ message: 'User does not exist. Please register.' });
   }
 
-  // Handle login with password
-  if (password) {
-    const isMatch = await user.comparePassword(password);
-    if (isMatch) {
-      // Create JWT token for the user
-      const token = await user.createJwt(res);
-      return res.status(200).json({
-        success: true,
-        data: {
-          _id: user._id,
-          email: user.email,
-        },
-        message: 'User logged in successfully with password',
-        token,
-      });
-    } else {
-      return res.status(400).send({ message: 'Invalid password' });
-    }
+  // Check if user is verified their email by otp after registration
+  const otpDocument = await OTP.findOne({ email });
+  if (!otpDocument) {
+    return res.status(400).send({ message: 'Please verify your email first.' });
   }
 
-  // Handle login with OTP
-  if (!password && !otp) {
-    return res.status(400).send({ message: 'Password or OTP is required for login' });
-  }
+   // Handle password login
+   const isMatch = await user.comparePassword(password);
+   if (!isMatch) {
+     return res.status(400).send({ message: 'Invalid password' });
+   }
 
-  const otpData = await OTP.findOne({ email });
-  const currentTime = new Date();
+  // Create JWT token for the user
+  const token = await user.createJwt(res);
 
-  // Check if an OTP already exists and is still valid (within 10 minutes)
-  if (otpData && (currentTime - otpData.createdAt) < 600000) {
-    return res.status(400).send({ message: 'An OTP has already been sent. Please wait before requesting a new one.' });
-  }
-
-  // Generate a new OTP and send it to the email
-  const newOtp = generateOtp();
-    otpData.otp = newOtp;
-    otpData.createdAt = new Date();
-    await otpData.save();
-  
-
-  // Send new OTP via email
-  await sendMail(email, newOtp);
-
-  return res.status(200).send({
+  // Respond with success
+  res.status(200).json({
     success: true,
-    message: 'New OTP sent. Please verify the OTP.',
+    data: {
+      _id: user._id,
+      email: user.email,
+    },
+    message: 'User logged in successfully',
+    token,
   });
 });
 
@@ -269,6 +262,84 @@ exports.resetPassword = asyncHandler(async (req, res) => {
           message: 'Password reset successfully',
        });
 })
+
+// @Desc Update User Profile
+// @Route PUT /api/v1/users/profile
+exports.updateProfile = asyncHandler(async (req, res) => {
+  const { name, mobile } = req.body; // Get other fields from req.body
+  const profileImage = req.file?.path; // Get the image URL from the uploaded file
+
+  if (!name || !mobile) {
+    return res.status(400).send({ message: 'Name and mobile are required' });
+  }
+
+  const userId = req.user._id; // Assuming you have user ID from token or session
+  const user = await User.findById(userId);
+
+  if (!user) {
+    return res.status(404).send({ message: 'User not found' });
+  }
+
+  // Update user details
+  user.name = name;
+  user.mobile = mobile;
+  if (profileImage) {
+    user.profileImage = profileImage; // Store the image URL
+  }
+
+  await user.save();
+
+  res.status(200).send({
+    success: true,
+    message: 'Profile updated successfully',
+    data: {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      mobile: user.mobile,
+      profileImage: user.profileImage,
+    },
+  });
+});
+
+
+// @Desc Delete User Account
+// @Route DELETE /api/v1/profile/:id
+exports.deleteUserProfile = asyncHandler(async (req, res) => {
+  const { id } = req.params; 
+  const { password } = req.body;
+
+  try {
+      // Find the user by their ID
+      const user = await User.findById(id);
+      
+      // If user not found, return an error
+      if (!user) {
+          return res.status(404).json({ message: 'User not found.' });
+      }
+
+      // Use the comparePassword method from the User model
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+          return res.status(400).json({ message: 'Incorrect password.' });
+      }
+
+      // Delete the user account
+      await User.findByIdAndDelete(id);
+
+      // Also delete the corresponding OTP entry
+      await OTP.findByIdAndDelete({ userId: id }); // Assuming OTP model has a userId field to link to the user
+
+      res.status(200).json({ message: 'User account deleted successfully.' });
+  } catch (error) {
+      res.status(500).json({ message: 'Server error. Please try again.' });
+  }
+});
+
+
+
+
+
   
   
 
