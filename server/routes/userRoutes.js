@@ -25,10 +25,10 @@ router.post("/login", login);
 router.post('/forgot-password', forgotPassword);
 
 // Route for reset password
-router.post("/reset-password", resetPassword);1
+router.post("/reset-password", resetPassword);
 
 // Protected route for updating user profile (with image upload)
-router.put("/profile", protect, upload.single('profileImage'), updateProfile); 
+// router.put("/profile", protect, upload.single('profileImage'), updateProfile); 
 
 
 // Route to delete user profile by ID

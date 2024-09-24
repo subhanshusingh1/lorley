@@ -13,9 +13,11 @@ import BusinessLogin from '../pages/business/BusinessLogin';
 import BusinessDashboard from '../pages/business/BusinessDashboard';
 import BusinessProfile from '../pages/business/BusinessProfile';
 import BusinessListing from '../pages/business/BusinessListing';
-import UserProfile from '../pages/users/UserProfile'; // Import UserProfile
+import UserProfile from '../pages/users/UserProfile'; 
 import './App.css';
 import ReviewPage from '../pages/ReviewPage'; 
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const App = () => {
   return (
@@ -41,9 +43,10 @@ const App = () => {
           <Route path="/business/review" element={<ReviewPage />} />
           
           {/* User Profile Route */}
-          <Route path="/profile" element={<UserProfile />} /> {/* Add User Profile route */}
+          <Route path="/profile" element={<UserProfile />} />
         </Routes>
         <Footer />
+        <ToastContainer /> {/* Add ToastContainer here */}
       </div>
     </Router>
   );

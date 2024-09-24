@@ -2,12 +2,16 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faPlusCircle, faUserPlus, faUserTie, faSignInAlt, faSignOutAlt, faUserCircle, faListAlt, faStar } from '@fortawesome/free-solid-svg-icons';
+import { useDispatch } from 'react-redux';
+import { toast } from 'react-toastify'; // Import toast from react-toastify
+import { logout } from '../actions/authActions'; // Import your logout action
 
 const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isBusinessDropdownOpen, setIsBusinessDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch(); // Get the dispatch function
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -17,6 +21,23 @@ const Navbar = () => {
   const toggleBusinessDropdown = () => {
     setIsBusinessDropdownOpen(!isBusinessDropdownOpen);
   };
+
+  const handleLogout = () => {    
+    // Dispatch logout action
+    dispatch(logout()); 
+
+    // Show toast notification
+    toast.success('You have logged out successfully!');
+
+    // Delay navigation to allow the toast to display
+    setTimeout(() => {
+      navigate('/'); // Redirect to login page or home page
+    }, 2000); // Delay for 2 seconds
+
+  };
+  
+
+
 
   return (
     <nav className="bg-gray-900 w-full z-50 p-4 shadow-lg">
@@ -170,9 +191,10 @@ const Navbar = () => {
             </Link>
           </li>
 
-          {/* Logout Link (Visible for testing) */}
+          {/* Logout Link */}
           <li>
             <button
+              onClick={handleLogout} // Connect logout function
               className="text-white hover:text-red-500 transition duration-300"
             >
               <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />

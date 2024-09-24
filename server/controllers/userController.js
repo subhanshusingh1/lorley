@@ -199,127 +199,74 @@ exports.login = asyncHandler(async (req, res) => {
 // @Route POST /api/v1/users/forgot-password
 // Controller for forgot password
 exports.forgotPassword = asyncHandler(async (req, res) => {
-      const {email} = req.body;
+  const { email } = req.body;
 
-      // validate email presence
-      if(!email) {
-        return res.status(400).send({message: 'Email is required'});
-      }
+  // Validate email presence
+  if (!email) {
+    return res.status(400).send({ message: 'Email is required' });
+  }
 
-      // check if user exists
-      const user = await User.findOne({email});
-      let otpData = await OTP.findOne({email});
-    
-      if(!user) {
-        return res.status(404).send({message: 'User does not exist'})
-      }
+  // Check if user exists
+  const user = await User.findOne({ email });
+  let otpData = await OTP.findOne({ email });
 
-      // Generate OTP
-      const otp = generateOtp();
+  if (!user) {
+    return res.status(404).send({ message: 'User does not exist' });
+  }
 
-      // update otp database
-      if (!otpData) {
-        otpData = new OTP({
-          email,
-          otp,
-          createdAt: new Date(),
-        });
-      } else {
-        otpData.otp = otp;
-        otpData.createdAt = new Date();
-      }
+  // Generate OTP
+  const otp = generateOtp();
 
-      await otpData.save();
+  // Update OTP database
+  if (!otpData) {
+    otpData = new OTP({
+      email,
+      otp,
+      createdAt: new Date(),
+    });
+  } else {
+    otpData.otp = otp;
+    otpData.createdAt = new Date();
+  }
 
-      // send otp via email
-      await sendMail(email, otp)
+  await otpData.save();
 
-      // send response
-      res.status(200).send({
-        success: true,
-        message: 'OTP Send to your email for password reset',
-      })
+  // Send OTP via email
+  await sendMail(email, otp);
 
-})
+  // Send response
+  res.status(200).send({
+    success: true,
+    message: 'OTP sent to your email for password reset',
+  });
+});
 
 // @Desc Reset Password
 // @Route POST /api/v1/users/reset-password
 // Controller for reset password
 exports.resetPassword = asyncHandler(async (req, res) => {
-      const {email, otp, newPassword} = req.body;
+  const { email, newPassword } = req.body;
 
-      //validate input 
-      if(!email || !otp || !newPassword) {
-        return res.status(400).send({message: 'Email, otp and new password is required'});
-      }
-
-      // check for existing email
-      const otpData = await OTP.findOne({email});
-      if(!otpData) {
-        return res.status(404).send({message: 'No OTP found for requested email'});
-      }
-
-      // verify otp
-      if(otpData.otp != otp || !isOtpValid(otpData)) {
-        return res.status(400).send({message: 'Invalid or Expired OTP'});
-      }
-
-      // Check if OTP is expired
-      //  const currentTime = new Date();
-      //  const timeDifference = currentTime - otpData.createdAt;
-      //  if (timeDifference > 600000) { // 10 minutes expiration time
-      //     return res.status(400).send({ message: 'OTP has expired. Please request a new one.' });
-      //  }
-
-      // update user password
-      const user = await User.findOne({email})
-      user.password = newPassword;
-      await user.save(); 
-
-
-      // Send success response
-       res.status(200).send({
-          success: true,
-          message: 'Password reset successfully',
-       });
-})
-
-// @Desc Update User Profile
-// @Route PUT /api/v1/users/profile
-exports.updateProfile = asyncHandler(async (req, res) => {
-  const { name, mobile } = req.body; // Get other fields from req.body
-  const profileImage = req.file?.path; // Get the image URL from the uploaded file
-
-  if (!name || !mobile) {
-    return res.status(400).send({ message: 'Name and mobile are required' });
+  // Validate input
+  if (!email || !newPassword) {
+    return res.status(400).send({ message: 'Email and new password are required' });
   }
 
-  const userId = req.user._id; // Assuming you have user ID from token or session
-  const user = await User.findById(userId);
+  // Check if user exists
+  const user = await User.findOne({ email });
 
   if (!user) {
-    return res.status(404).send({ message: 'User not found' });
+    return res.status(404).send({ message: 'User does not exist' });
   }
 
-  // Update user details
-  user.name = name;
-  user.mobile = mobile;
-  if (profileImage) {
-    user.profileImage = profileImage; // Store the image URL
-  }
-
+  // Update user password
+  user.password = newPassword;
   await user.save();
 
+  // Send success response
   res.status(200).send({
     success: true,
-    message: 'Profile updated successfully',
-    data: {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      mobile: user.mobile,
-      profileImage: user.profileImage,
-    },
+    message: 'Password reset successfully',
   });
 });
 

@@ -76,7 +76,7 @@ UserSchema.methods.createJwt = async function (res) {
         );
 
         res.cookie(
-            'jwt',
+            'token',
             token,
             {
                 httpOnly: true,

@@ -14,19 +14,19 @@ import reviewReducer from './reducers/reviewReducers';
 
 // Combine all reducers
 const rootReducer = combineReducers({
-  auth: authReducer,                 // Authentication 
+  auth: authReducer,                 // Authentication reducer
   business: combineReducers({
-    register: businessRegister,      // Business registration
-    login: businessLogin,            // Business login
-    details: businessDetails,        // Fetch business details 
-    all: allBusinesses,              // Fetch all businesses
-    update: updateBusiness,          // Update business dashboard
-    uploadPhoto: uploadBusinessPhoto // Upload business logo/photos for profile
+    register: businessRegister,      // Business registration reducer
+    login: businessLogin,            // Business login reducer
+    details: businessDetails,        // Fetch business details reducer
+    all: allBusinesses,              // Fetch all businesses reducer
+    update: updateBusiness,          // Update business dashboard reducer
+    uploadPhoto: uploadBusinessPhoto // Upload business logo/photos reducer
   }),
-  review: reviewReducer,              // Include review reducer
+  review: reviewReducer,              // Review reducer
 });
 
-// Initial state (optional if not using any default values)
+// Initial state (optional)
 const initialState = {};
 
 // Middleware

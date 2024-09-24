@@ -1,12 +1,12 @@
-import { 
+import {
   REGISTER_REQUEST,
-  REGISTER_SUCCESS, 
-  REGISTER_FAIL, 
+  REGISTER_SUCCESS,
+  REGISTER_FAIL,
   OTP_REQUEST,
   OTP_VERIFIED,
   OTP_FAILED,
-  LOGIN_REQUEST, 
-  LOGIN_SUCCESS, 
+  LOGIN_REQUEST,
+  LOGIN_SUCCESS,
   LOGIN_FAIL,
   LOGOUT,
   USER_FORGOT_PASSWORD_REQUEST,
@@ -16,7 +16,7 @@ import {
   USER_RESET_PASSWORD_SUCCESS,
   USER_RESET_PASSWORD_FAIL,
   UPDATE_PROFILE_SUCCESS,
-  UPDATE_PROFILE_FAIL, 
+  UPDATE_PROFILE_FAIL,
   DELETE_ACCOUNT_SUCCESS
 } from '../actions/types';
 
@@ -25,12 +25,11 @@ const initialState = {
   isAuthenticated: false,
   loading: true,
   user: null,
-  otpSent: false,
   otpVerified: false,
   error: null,
   message: null,
   success: false,
-  email: null, // Add email field to store user's email
+  email: null, // Field to store user's email
 };
 
 export default function (state = initialState, action) {
@@ -42,9 +41,9 @@ export default function (state = initialState, action) {
     case OTP_REQUEST:
     case USER_FORGOT_PASSWORD_REQUEST:
     case USER_RESET_PASSWORD_REQUEST:
-      return { 
-        ...state, 
-        loading: true, 
+      return {
+        ...state,
+        loading: true,
         error: null,
         message: null,
         success: false,
@@ -79,7 +78,7 @@ export default function (state = initialState, action) {
         otpVerified: true,
         loading: false,
         success: true,
-        email: payload.email || state.email, // Store email if available in payload
+        email: payload.email || state.email,
         message: payload.message || 'OTP verified successfully!',
       };
 
@@ -98,13 +97,21 @@ export default function (state = initialState, action) {
         loading: false,
       };
 
+
     case USER_FORGOT_PASSWORD_SUCCESS:
-    case USER_RESET_PASSWORD_SUCCESS:
-      return { 
-        ...state, 
-        loading: false, 
+      return {
+        ...state,
+        loading: false,
         success: true,
-        message: payload?.message || 'Operation successful!',
+        message: payload?.message || 'Password reset email sent successfully!',
+      };
+
+    case USER_RESET_PASSWORD_SUCCESS:
+      return {
+        ...initialState,
+        loading: false,
+        success: true,
+        message: payload?.message || 'Password reset successfully! Please log in.',
       };
 
     case UPDATE_PROFILE_SUCCESS:
@@ -134,8 +141,3 @@ export default function (state = initialState, action) {
       return state;
   }
 }
-
-
-
- 
-   

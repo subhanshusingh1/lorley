@@ -4,24 +4,34 @@ import { resetPassword } from '../../actions/authActions';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { FaEye, FaEyeSlash } from 'react-icons/fa'; // Importing eye icon
 
 const ResetPassword = () => {
-    const [otp, setOtp] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false); // State to toggle confirm password visibility
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const location = useLocation();
-    const { emailOrPhone } = location.state || {};
+    const { email } = location.state || {}; // Get email from state
 
     const handleInputChange = (setter) => (e) => {
         setter(e.target.value);
         setError(''); // Reset error when typing
     };
 
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword);
+    };
+
+    const toggleConfirmPasswordVisibility = () => {
+        setShowConfirmPassword(!showConfirmPassword);
+    };
+
     const validateInput = () => {
-        if (!otp || !newPassword || !confirmPassword) {
+        if (!newPassword || !confirmPassword) {
             setError('All fields are required.');
             return false;
         }
@@ -33,10 +43,6 @@ const ResetPassword = () => {
             setError('Password must be at least 8 characters long.');
             return false;
         }
-        if (!/^[A-Z0-9]+$/.test(otp) || otp.length !== 8) {
-            setError('Please enter a valid OTP.');
-            return false;
-        }
         return true;
     };
 
@@ -44,7 +50,7 @@ const ResetPassword = () => {
         if (!validateInput()) return;
 
         setError(''); // Clear any previous error
-        const response = await dispatch(resetPassword(emailOrPhone, otp, newPassword));
+        const response = await dispatch(resetPassword(email, newPassword));
 
         if (response.success) {
             toast.success('Password reset successfully!'); // Show success notification
@@ -62,36 +68,43 @@ const ResetPassword = () => {
                 {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
                 <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">OTP</label>
-                    <input
-                        type="text"
-                        placeholder="Enter OTP"
-                        value={otp}
-                        onChange={handleInputChange(setOtp)}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    />
-                </div>
-
-                <div className="mb-4">
                     <label className="block text-gray-700 text-sm font-bold mb-2">New Password</label>
-                    <input
-                        type="password"
-                        placeholder="Enter new password"
-                        value={newPassword}
-                        onChange={handleInputChange(setNewPassword)}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    />
+                    <div className="relative">
+                        <input
+                            type={showPassword ? "text" : "password"} // Toggle between text and password types
+                            placeholder="Enter new password"
+                            value={newPassword}
+                            onChange={handleInputChange(setNewPassword)}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        />
+                        <button
+                            type="button"
+                            onClick={togglePasswordVisibility}
+                            className="absolute right-3 top-2 text-gray-600"
+                        >
+                            {showPassword ? <FaEyeSlash /> : <FaEye />}
+                        </button>
+                    </div>
                 </div>
 
                 <div className="mb-4">
                     <label className="block text-gray-700 text-sm font-bold mb-2">Confirm New Password</label>
-                    <input
-                        type="password"
-                        placeholder="Confirm new password"
-                        value={confirmPassword}
-                        onChange={handleInputChange(setConfirmPassword)}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    />
+                    <div className="relative">
+                        <input
+                            type={showConfirmPassword ? "text" : "password"} // Toggle between text and password types
+                            placeholder="Confirm new password"
+                            value={confirmPassword}
+                            onChange={handleInputChange(setConfirmPassword)}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        />
+                        <button
+                            type="button"
+                            onClick={toggleConfirmPasswordVisibility}
+                            className="absolute right-3 top-2 text-gray-600"
+                        >
+                            {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                        </button>
+                    </div>
                 </div>
 
                 <button

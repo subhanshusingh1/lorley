@@ -1,4 +1,5 @@
 import axios from 'axios';
+import Cookies from 'js-cookie'; 
 import {
   REGISTER_REQUEST,
   REGISTER_SUCCESS,
@@ -182,13 +183,16 @@ export const loginUser = (email, password) => async (dispatch) => {
 };
 
 // Logout action
-export const logout = () => {
-  return {
-    type: LOGOUT,
-  };
+export const logout = () => (dispatch) => {
+  // Remove token from cookies
+  Cookies.remove('token'); 
+  
+  // Dispatch logout action
+  dispatch({ type: LOGOUT });
 };
 
-// Forgot Password Action
+
+// Forgot Password
 export const forgotPassword = (email) => async (dispatch) => {
   try {
     dispatch({ type: USER_FORGOT_PASSWORD_REQUEST });
@@ -210,11 +214,14 @@ export const forgotPassword = (email) => async (dispatch) => {
 };
 
 // Reset Password 
-export const resetPassword = (email, otp, newPassword) => async (dispatch) => {
+export const resetPassword = (email, newPassword) => async (dispatch) => {
   try {
     dispatch({ type: USER_RESET_PASSWORD_REQUEST });
     const config = { headers: { 'Content-Type': 'application/json' } };
-    await axios.post('http://localhost:5000/api/v1/users/reset-password', { email, otp, newPassword }, config);
+
+    // No OTP in the payload anymore
+    await axios.post('http://localhost:5000/api/v1/users/reset-password', { email, newPassword }, config);
+
     dispatch({ type: USER_RESET_PASSWORD_SUCCESS });
 
     return { success: true, message: 'Password reset successful!' };
