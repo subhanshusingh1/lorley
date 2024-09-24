@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlusCircle, faSignInAlt, faUserCircle, faListAlt, faStar } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faPlusCircle, faUserPlus, faUserTie, faSignInAlt, faSignOutAlt, faUserCircle, faListAlt, faStar } from '@fortawesome/free-solid-svg-icons';
 
 const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,7 +23,7 @@ const Navbar = () => {
       <div className="container mx-auto flex items-center justify-between space-x-12">
         {/* Logo */}
         <div className="navbar-logo">
-          <Link to="/" className="text-2xl font-bold text-white">
+          <Link to="/" className="text-3xl font-bold text-white hover:text-blue-400 transition duration-300">
             Lorley
           </Link>
         </div>
@@ -33,16 +33,16 @@ const Navbar = () => {
           <form onSubmit={handleSearch} className="flex w-full max-w-lg mx-auto">
             <input
               type="text"
-              placeholder="Search for businesses..."
+              placeholder="Search for best local businesses & services near you."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="border rounded-l-lg py-2 px-4 w-full focus:outline-none focus:ring focus:border-blue-300"
+              className="border border-gray-400 rounded-l-lg py-2 px-4 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
               type="submit"
-              className="bg-blue-500 text-white rounded-r-lg px-4 hover:bg-blue-600 transition"
+              className="bg-blue-600 text-white rounded-r-lg px-4 hover:bg-blue-700 transition duration-300"
             >
-              <i className="fas fa-search"></i>
+              <FontAwesomeIcon icon={faSearch} />
             </button>
           </form>
         </div>
@@ -53,16 +53,18 @@ const Navbar = () => {
           <li>
             <Link
               to="/login"
-              className={`text-white hover:text-blue-500 ${location.pathname === '/login' ? 'font-bold' : ''}`}
+              className={`text-white hover:text-blue-400 transition duration-300 ${location.pathname === '/login' ? 'font-bold' : ''}`}
             >
+              <FontAwesomeIcon icon={faSignInAlt} className="mr-2" />
               Login
             </Link>
           </li>
           <li>
             <Link
               to="/register"
-              className={`text-white hover:text-blue-500 ${location.pathname === '/register' ? 'font-bold' : ''}`}
+              className={`text-white hover:text-blue-400 transition duration-300 ${location.pathname === '/register' ? 'font-bold' : ''}`}
             >
+              <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
               Register
             </Link>
           </li>
@@ -71,7 +73,7 @@ const Navbar = () => {
           <li>
             <Link
               to="/profile"
-              className={`text-white hover:text-blue-500 flex items-center space-x-2 ${location.pathname === '/profile' ? 'font-bold' : ''}`}
+              className={`text-white hover:text-blue-400 transition duration-300 flex items-center space-x-2 ${location.pathname === '/profile' ? 'font-bold' : ''}`}
             >
               <FontAwesomeIcon icon={faUserCircle} />
               <span>User Profile</span>
@@ -82,7 +84,7 @@ const Navbar = () => {
           <li className="relative">
             <button
               onClick={toggleBusinessDropdown}
-              className={`text-white hover:text-blue-500 focus:outline-none flex items-center ${isBusinessDropdownOpen ? 'font-bold' : ''}`}
+              className={`text-white hover:text-blue-400 transition duration-300 flex items-center ${isBusinessDropdownOpen ? 'font-bold' : ''}`}
             >
               Business
               <svg
@@ -128,6 +130,7 @@ const Navbar = () => {
                     className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
                     onClick={() => setIsBusinessDropdownOpen(false)}
                   >
+                    <FontAwesomeIcon icon={faUserTie} aria-hidden="true" />
                     <span>Business Dashboard</span>
                   </Link>
                 </li>
@@ -149,7 +152,7 @@ const Navbar = () => {
           <li>
             <Link
               to="/business/listing"
-              className={`text-white hover:text-blue-500 flex items-center space-x-2 ${location.pathname === '/business/listing' ? 'font-bold' : ''}`}
+              className={`text-white hover:text-blue-400 transition duration-300 flex items-center space-x-2 ${location.pathname === '/business/listing' ? 'font-bold' : ''}`}
             >
               <FontAwesomeIcon icon={faListAlt} />
               <span>Business Listing</span>
@@ -160,7 +163,7 @@ const Navbar = () => {
           <li>
             <Link
               to="/business/review"
-              className={`text-white hover:text-blue-500 flex items-center space-x-2 ${location.pathname === '/business/review' ? 'font-bold' : ''}`}
+              className={`text-white hover:text-blue-400 transition duration-300 flex items-center space-x-2 ${location.pathname === '/business/review' ? 'font-bold' : ''}`}
             >
               <FontAwesomeIcon icon={faStar} />
               <span>Add Review</span>
@@ -170,8 +173,9 @@ const Navbar = () => {
           {/* Logout Link (Visible for testing) */}
           <li>
             <button
-              className="text-white hover:text-red-500"
+              className="text-white hover:text-red-500 transition duration-300"
             >
+              <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
               Logout
             </button>
           </li>

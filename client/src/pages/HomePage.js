@@ -2,19 +2,22 @@ import React from 'react';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+import { useNavigate } from 'react-router-dom';
 
 const HomePage = () => {
+  const navigate = useNavigate();
+
   const settings = {
-    dots: false, // Remove dots
+    dots: true, // Enable dots
     infinite: true,
     speed: 500,
     slidesToShow: 1,
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 3000,
-    arrows: true, // Enable arrows
-    nextArrow: <SampleNextArrow />,
-    prevArrow: <SamplePrevArrow />
+    pauseOnHover: true, // Pause on hover
+    arrows: false, // Remove arrows
+    customPaging: (i) => <CustomDot index={i} />, // Custom dot component
   };
 
   const services = [
@@ -42,7 +45,7 @@ const HomePage = () => {
       <Slider {...settings} className="h-full">
         {services.map((service, index) => (
           <div key={index} className="relative h-screen">
-            <img src={service.image} alt={service.title} className="object-cover w-full h-full" />
+            <img src={service.image} alt={service.title} className="object-cover w-full h-full shadow-none" />
             <div className="absolute inset-0 bg-black bg-opacity-40 flex flex-col justify-center items-center text-white p-4">
               <h3 className="text-4xl font-semibold">{service.title}</h3>
               <p className="text-xl mt-4">{service.description}</p>
@@ -50,13 +53,13 @@ const HomePage = () => {
                 <div className="mt-8 space-x-4">
                   <button
                     className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded"
-                    onClick={() => window.location.href='/register'}
+                    onClick={() => navigate('/register')}
                   >
                     {service.button1Text}
                   </button>
                   <button
                     className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-6 rounded"
-                    onClick={() => window.location.href='/business'}
+                    onClick={() => navigate('/business')}
                   >
                     {service.button2Text}
                   </button>
@@ -70,24 +73,13 @@ const HomePage = () => {
   );
 };
 
-const SampleNextArrow = (props) => {
-  const { className, style, onClick } = props;
+// Custom Dot Component
+const CustomDot = ({ index, onClick }) => {
   return (
-    <div
-      className={`${className} slick-arrow slick-next`}
-      style={{ ...style, display: 'block', right: '10px', zIndex: 1 }}
+    <button
+      className={`w-6 h-3 mx-1 rounded-lg transition-colors duration-300 ${index === 0 ? 'bg-gray-600' : 'bg-gray-400'}`}
       onClick={onClick}
-    />
-  );
-};
-
-const SamplePrevArrow = (props) => {
-  const { className, style, onClick } = props;
-  return (
-    <div
-      className={`${className} slick-arrow slick-prev`}
-      style={{ ...style, display: 'block', left: '10px', zIndex: 1 }}
-      onClick={onClick}
+      style={{ cursor: 'pointer' }}
     />
   );
 };
