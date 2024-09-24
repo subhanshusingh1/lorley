@@ -31,10 +31,10 @@ const isOtpValid = (otpDocument) => {
 // @route POST /api/v1/users
 // Controller for user registration
 exports.register = asyncHandler(async (req, res) => {
-  const { name, email, password, mobile } = req.body;
+  const { name, email, password } = req.body;
 
   // Input validation
-  if (!name || !email || !password || !mobile) {
+  if (!name || !email || !password) {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
@@ -50,8 +50,39 @@ exports.register = asyncHandler(async (req, res) => {
     name,
     email,
     password, // password will be hashed in the User model's 'pre-save' hook
-    mobile,
+    // mobile,
   });
+
+  // Send success response without sending OTP
+  res.status(201).json({
+    success: true,
+    data: {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      // mobile: user.mobile,
+    },
+    message: 'User registered successfully. Please request OTP separately.',
+  });
+});
+
+// @Desc Send OTP to User's Email
+// @Route POST /api/v1/users/send-otp
+// Controller to send OTP
+exports.sendOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  // Validate email presence
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required' });
+  }
+
+  // Check if user exists
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return res.status(404).json({ message: 'User does not exist. Please register first.' });
+  }
 
   // Generate OTP
   const otp = generateOtp();
@@ -60,26 +91,16 @@ exports.register = asyncHandler(async (req, res) => {
   await OTP.create({
     email,
     otp,
-    createdAt: new Date(), // save the time for OTP creation
+    createdAt: new Date(),
   });
 
-  // Send OTP to user via email
-  await sendMail(email, otp); // Send OTP using sendMail utility
+  // Send OTP to the user via email
+  await sendMail(email, otp);
 
-  // // Create JSON Web Token (JWT) and store it in cookies
-  // const token = await user.createJwt(res);
-
-  // Send success response
-  res.status(201).json({
+  // Send response
+  res.status(200).json({
     success: true,
-    data: {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      mobile: user.mobile,
-    },
-    // token,
-    message: 'User registered successfully. Please check your email for the OTP.',
+    message: 'OTP sent successfully to the registered email.',
   });
 });
 

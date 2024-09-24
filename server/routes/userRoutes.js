@@ -1,6 +1,6 @@
 const express = require('express');
 // User controllers
-const { login, register, verifyOtp, forgotPassword, resetPassword, updateProfile, deleteUserProfile } = require("../controllers/userController.js");
+const { login, register, verifyOtp, forgotPassword, resetPassword, updateProfile, deleteUserProfile, sendOtp } = require("../controllers/userController.js");
 // Auth middlewares
 const { protect } = require("../middlewares/authMiddleware.js");
 
@@ -11,6 +11,9 @@ const { upload } = require('../config/multerConfig'); // Assuming you've set up 
 
 // Route for user registration
 router.post("/register", register);
+
+// Route to send otp
+router.post("/send-otp", sendOtp)
 
 // Route for OTP verification
 router.post("/verify-otp", verifyOtp);

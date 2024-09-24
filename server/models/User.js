@@ -22,17 +22,17 @@ const UserSchema = new mongoose.Schema({
         required: [true, 'Please Enter Your Password!!!'],
         minlength: 6
     },
-    mobile: {
-        type: String,
-        required: [true, 'Please Provide Your Mobile Number'],
-        unique: true,
-        validate: {
-            validator: function (v) {
-                return validate.isMobilePhone(v, 'en-IN'); // 'en-IN' for Indian format
-            },
-            message: 'Please Provide a Valid Mobile Number'
-        }
-    },
+    // mobile: {
+    //     type: String,
+    //     required: [true, 'Please Provide Your Mobile Number'],
+    //     unique: true,
+    //     validate: {
+    //         validator: function (v) {
+    //             return validate.isMobilePhone(v, 'en-IN'); // 'en-IN' for Indian format
+    //         },
+    //         message: 'Please Provide a Valid Mobile Number'
+    //     }
+    // },
     role: {
         type: String,
         enum: ['user', 'admin'],
