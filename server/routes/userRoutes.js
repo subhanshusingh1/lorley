@@ -1,13 +1,14 @@
 const express = require('express');
 // User controllers
-const { login, register, verifyOtp, forgotPassword, resetPassword, updateProfile, deleteUserProfile, sendOtp } = require("../controllers/userController.js");
+const { login, register, verifyOtp, forgotPassword, resetPassword, updateProfile, deleteUserProfile, sendOtp, getProfileById, deleteUser, refreshToken } = require("../controllers/userController.js");
 // Auth middlewares
 const { protect } = require("../middlewares/authMiddleware.js");
 
+const { uploadProfileImage } = require('../controllers/userController');
+const { upload } = require('../config/multerConfig'); 
+
 const router = express.Router();
 
-// Middleware for file upload
-const { upload } = require('../config/multerConfig'); // Assuming you've set up multer in a config file
 
 // Route for user registration
 router.post("/register", register);
@@ -27,11 +28,16 @@ router.post('/forgot-password', forgotPassword);
 // Route for reset password
 router.post("/reset-password", resetPassword);
 
-// Protected route for updating user profile (with image upload)
-// router.put("/profile", protect, upload.single('profileImage'), updateProfile); 
+// Route to get particular user details
+router.get("/profile/:id", protect , getProfileById)
 
+// Route to upload profile image
+router.post('/upload-profile-image', protect, upload.single('profileImage'), uploadProfileImage);
 
 // Route to delete user profile by ID
-router.delete('/profile/:id', protect, deleteUserProfile);
+router.delete('/profile/:id', protect, deleteUser);
+
+// Route for refreshing access token
+router.post('/refresh-token', refreshToken)
 
 module.exports = router;

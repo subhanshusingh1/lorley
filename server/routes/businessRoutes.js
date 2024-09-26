@@ -1,48 +1,33 @@
 const express = require('express');
 const { 
-    getBusinesses, 
     addBusiness, 
-    updateBusiness, 
-    deleteBusiness, 
-    verifyBusiness, 
-    getBusinessById, 
-    addReview, 
-    updateBusinessCustomization, 
-    businessLogin 
-} = require('../controllers/businessController');
-const { protectBusiness } = require('../middlewares/businessMiddleware');
+    sendOtp, 
+    verifyOtp, 
+    login
+} = require('../controllers/businessController'); // Ensure these controllers are defined
 const multer = require('multer');
 
-// Multer setup for file uploads (used for logos and verification documents)
+// Multer setup for file uploads if you plan to use it, can be removed if not needed
 const upload = multer({ dest: 'uploads/' });
 
 const router = express.Router();
 
-// Route to get all businesses (with optional category and businessType filtering)
-router.get('/', getBusinesses);
-
-// Route to register/add a new business (must be logged in as a user)
-router.post('/', protectBusiness, upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'photos', maxCount: 5 }]), addBusiness);
+// Route to register/add a new business
+router.post('/', addBusiness); // Assuming this will register a business
 
 // Route for businesses to log in
-router.post('/login', businessLogin);
+router.post('/login', login);
 
-// Route to update a business (only the business owner can update)
-router.put('/:id', protectBusiness, upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'photos', maxCount: 5 }]), updateBusiness);
+// Route to send OTP for business verification
+router.post('/send-otp', sendOtp);
 
-// Route to delete a business (only the business owner can delete)
-router.delete('/:id', protectBusiness, deleteBusiness);
+// Route to verify the OTP for business
+router.post('/verify-otp', verifyOtp);
 
-// Route to verify a business (uploading verification document)
-router.post('/:id/verify', protectBusiness, upload.single('document'), verifyBusiness);
+// Route for Forgot Password 
+router.post('/forgot-password', forgotPassword);
 
-// Route to get a specific business by ID (view business details)
-router.get('/:id', getBusinessById);
-
-// Route to add a review for a business (must be logged in)
-router.post('/:id/review', protectBusiness, addReview);
-
-// Route to update business customization (only the business owner can customize)
-router.put('/:id/customization', protectBusiness, updateBusinessCustomization);
+// Route for Reset Password
+router.post('/reset-password', resetPassword);
 
 module.exports = router;

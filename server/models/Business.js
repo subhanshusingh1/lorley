@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
 
+// Business schema
 const businessSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -13,101 +14,113 @@ const businessSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Email is required'],
         unique: true,
+        validate: [validator.isEmail, 'Invalid email format'],
+    },
+    mobile: {
+        type: String,
+        required: [true, 'Mobile number is required'],
         validate: {
-            validator: function (value) {
-                return validator.isEmail(value); // Validate email format
+            validator: function(v) {
+                // Regex for Indian mobile numbers
+                return /^(?:\+91|91|0)?[789]\d{9}$/.test(v);
             },
-            message: 'Invalid email format',
-        },
+            message: 'Invalid mobile number format. Please enter a valid Indian mobile number.'
+        }
     },
     password: {
         type: String,
         required: [true, 'Password is required'],
-        minlength: [6, 'Password must be at least 6 characters long'],
+        minlength: 6,
     },
     businessType: {
-        type: String, // Product or Service
-        required: [true, 'Business type is required'],
-        enum: ['Product', 'Service'], // Valid options
-    },
-    contactNumber: {
         type: String,
-        required: [true, 'Contact number is required'],
-        validate: {
-            validator: function (value) {
-                return validator.isMobilePhone(value, 'en-IN'); // Validate for Indian mobile numbers
-            },
-            message: 'Invalid contact number format',
-        },
+        required: [true, 'Business type is required'],
+        enum: ['Product', 'Service'],
     },
     address: {
-        type: String,
-        trim: true,
-    },
-    description: {
-        type: String,
-        trim: true,
-    },
-    logo: {
-        type: String, // URL for logo
-        validate: {
-            validator: function (value) {
-                return value ? validator.isURL(value) : true; // Validate logo URL
-            },
-            message: 'Invalid URL for logo',
+        houseFlatBlockNo: {
+            type: String,
+            required: [true, 'House/Flat/Block No is required'],
         },
+        areaStreetVillage: {
+            type: String,
+            required: [true, 'Area/Street/Village is required'],
+        },
+        landmark: {
+            type: String,
+            required: [true, 'Landmark is required'],
+        },
+        pincode: {
+            type: String,
+            required: [true, 'Pincode is required'],
+            validate: {
+                validator: function(v) {
+                    // Regex for Indian pincode (6 digits)
+                    return /^[1-9][0-9]{5}$/.test(v);
+                },
+                message: 'Invalid pincode format. Please enter a valid 6-digit Indian pincode.'
+            }
+        },
+        city: {
+            type: String,
+            required: [true, 'City is required'],
+        },
+        state: {
+            type: String,
+            required: [true, 'State is required'],
+        }
+    },
+    description: String,
+    logo: {
+        type: String,
+        validate: [validator.isURL, 'Invalid URL for logo'],
     },
     photos: [{
-        type: String, // Array of URLs for business photos
-        validate: {
-            validator: function (value) {
-                return value ? validator.isURL(value) : true; // Validate each photo URL
-            },
-            message: 'Invalid URL for photo',
-        },
-    }],
-    openingHours: {
-        monday: { open: String, close: String },
-        tuesday: { open: String, close: String },
-        wednesday: { open: String, close: String },
-        thursday: { open: String, close: String },
-        friday: { open: String, close: String },
-        saturday: { open: String, close: String },
-        sunday: { open: String, close: String },
-    },
-    isVerified: {
-        type: Boolean,
-        default: false,
-    },
-    verificationStatus: {
         type: String,
-        enum: ['Pending', 'Verified', 'Rejected'],
-        default: 'Pending',
+        validate: [validator.isURL, 'Invalid URL for photo'],
+        default: []
+    }],
+    category: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category', // Reference to the Category model
+        required: [true, 'Category is required'],
+    },
+    openingHours: {
+        monday: { open: { type: String, required: true }, close: { type: String, required: true } },
+        tuesday: { open: { type: String, required: true }, close: { type: String, required: true } },
+        wednesday: { open: { type: String, required: true }, close: { type: String, required: true } },
+        thursday: { open: { type: String, required: true }, close: { type: String, required: true } },
+        friday: { open: { type: String, required: true }, close: { type: String, required: true } },
+        saturday: { open: { type: String, required: true }, close: { type: String, required: true } },
+        sunday: { open: { type: String, required: true }, close: { type: String, required: true } },
     },
     views: {
         type: Number,
-        default: 0,
+        default: 0, // Track business views
+    },
+    searchCount: {
+        type: Number,
+        default: 0, // Track how many times the business has been searched
     },
     reviews: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Review',
     }],
+    refreshToken: {
+        type: String,
+        default: '',
+    },
 }, {
     timestamps: true,
 });
 
-// Hashing Password before saving
+// Hashing Password using Bcrypt
 businessSchema.pre('save', async function (next) {
-    try {
-        if (!this.isModified('password')) {
-            return next();
-        }
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (error) {
-        next(new Error(`Password can't be hashed: ${error.message}`));
-    }
+    if (!this.isModified('password')) return next();
+
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
 });
 
 // Comparing Password
@@ -115,30 +128,37 @@ businessSchema.methods.comparePassword = async function (password) {
     return await bcrypt.compare(password, this.password);
 };
 
-// Creating JWT Token and storing it in cookie
+// Generating Access Token
+businessSchema.methods.generateAccessToken = function () {
+    return jwt.sign({ _id: this._id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+};
+
+// Generating Refresh Token
+businessSchema.methods.generateRefreshToken = function () {
+    return jwt.sign({ _id: this._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+};
+
+// Creating JWT Token and storing it in cookies
 businessSchema.methods.createJwt = async function (res) {
-    try {
-        const token = jwt.sign(
-            { _id: this._id },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+    const accessToken = this.generateAccessToken();
+    const refreshToken = this.generateRefreshToken();
 
-        res.cookie(
-            'jwt',
-            token,
-            {
-                httpOnly: true,
-                sameSite: 'strict',
-                secure: process.env.NODE_ENV !== 'development',
-                maxAge: 24 * 60 * 60 * 1000 // 24 hours
-            }
-        );
+    this.refreshToken = refreshToken;
+    await this.save();
 
-        return token;
-    } catch (error) {
-        throw new Error(`Token can't be created: ${error.message}`);
-    }
+    res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 15 * 60 * 1000 // 15 minutes
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    return { accessToken, refreshToken };
 };
 
 module.exports = mongoose.model('Business', businessSchema);

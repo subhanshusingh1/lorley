@@ -17,7 +17,12 @@ import {
   USER_RESET_PASSWORD_FAIL,
   UPDATE_PROFILE_SUCCESS,
   UPDATE_PROFILE_FAIL,
-  DELETE_ACCOUNT_SUCCESS
+  DELETE_ACCOUNT_SUCCESS,
+  DELETE_ACCOUNT_REQUEST,
+  DELETE_ACCOUNT_FAIL,
+  FETCH_PROFILE_REQUEST,
+  FETCH_PROFILE_SUCCESS,
+  FETCH_PROFILE_FAIL,
 } from '../actions/types';
 
 const initialState = {
@@ -41,6 +46,7 @@ export default function (state = initialState, action) {
     case OTP_REQUEST:
     case USER_FORGOT_PASSWORD_REQUEST:
     case USER_RESET_PASSWORD_REQUEST:
+    case FETCH_PROFILE_REQUEST: // Add this line for loading state
       return {
         ...state,
         loading: true,
@@ -56,20 +62,22 @@ export default function (state = initialState, action) {
         token: payload.token,
         isAuthenticated: true,
         loading: false,
-        user: payload.user,
+        user: payload.user, // Ensure user data is set
         success: true,
-        message: 'Operation successful!',
+        message: 'Login successful!',
       };
 
     case REGISTER_FAIL:
     case LOGIN_FAIL:
     case USER_FORGOT_PASSWORD_FAIL:
     case USER_RESET_PASSWORD_FAIL:
+    case FETCH_PROFILE_FAIL: // Add error handling
       return {
         ...state,
         loading: false,
         error: payload,
         success: false,
+        message: 'Operation failed. Please try again.', // General error message
       };
 
     case OTP_VERIFIED:
@@ -79,7 +87,7 @@ export default function (state = initialState, action) {
         loading: false,
         success: true,
         email: payload.email || state.email,
-        message: payload.message || 'OTP verified successfully!',
+        message: 'OTP verified successfully!',
       };
 
     case OTP_FAILED:
@@ -89,6 +97,7 @@ export default function (state = initialState, action) {
         loading: false,
         error: payload,
         success: false,
+        message: 'OTP verification failed.',
       };
 
     case LOGOUT:
@@ -96,7 +105,6 @@ export default function (state = initialState, action) {
         ...initialState,
         loading: false,
       };
-
 
     case USER_FORGOT_PASSWORD_SUCCESS:
       return {
@@ -114,10 +122,22 @@ export default function (state = initialState, action) {
         message: payload?.message || 'Password reset successfully! Please log in.',
       };
 
+    case FETCH_PROFILE_SUCCESS:
+      console.log("Setting user in reducer:", payload); // Check what payload is being set
+      return {
+          ...state,
+          user: payload,
+          loading: false,
+          success: true,
+          message: 'Profile retrieved successfully!',
+      };
+  
+
+
     case UPDATE_PROFILE_SUCCESS:
       return {
         ...state,
-        user: { ...state.user, ...payload },
+        user: { ...state.user, ...payload }, // Merge updated fields into user object
         loading: false,
         success: true,
         message: 'Profile updated successfully!',
@@ -129,13 +149,25 @@ export default function (state = initialState, action) {
         loading: false,
         error: payload,
         success: false,
+        message: 'Profile update failed.',
       };
 
-    case DELETE_ACCOUNT_SUCCESS:
-      return {
-        ...initialState,
-        loading: false,
-      };
+      case DELETE_ACCOUNT_REQUEST:
+        return {
+          ...state,
+          loading: true,
+        };
+      case DELETE_ACCOUNT_SUCCESS:
+        return {
+          ...initialState, // Clear the state after account deletion
+          loading: false,
+        };
+      case DELETE_ACCOUNT_FAIL:
+        return {
+          ...state,
+          loading: false,
+          error: action.payload,
+        };
 
     default:
       return state;

@@ -2,6 +2,7 @@
 const mongoose = require("mongoose");
 const validate = require("validator");
 
+
 const OtpSchema = new mongoose.Schema({
     email: {
         type: String,
@@ -14,14 +15,15 @@ const OtpSchema = new mongoose.Schema({
     otp: {
         type: String,
         required: [true, 'OTP is required'],
-        maxlength : 8
+        maxlength: 8
     },
     createdAt: {
         type: Date,
-        default: Date.now
+        default: Date.now,
     }
 }, {
     timestamps: true
 });
+
 
 module.exports = mongoose.model('OTP', OtpSchema);

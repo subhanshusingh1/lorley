@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout, updateUserProfile, deleteUserAccount, fetchUserProfile } from '../../actions/authActions';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { FaSpinner } from 'react-icons/fa'; // Loading spinner
 
 const UserProfile = () => {
     const dispatch = useDispatch();
@@ -15,59 +16,61 @@ const UserProfile = () => {
     
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
-    const [mobile, setMobile] = useState('');
-    const [profileImage, setProfileImage] = useState(null);
-    const [imagePreview, setImagePreview] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null); // Image preview state
     const [isDeleteAccountVisible, setDeleteAccountVisible] = useState(false);
     const [password, setPassword] = useState('');
+    const [profileImage, setProfileImage] = useState(null); // State for profile image upload
+
+    const userId = user?._id;
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            dispatch(fetchUserProfile(token));
+        if (!user && userId) {  // Fetch profile if not already fetched and if userId exists
+            dispatch(fetchUserProfile(userId));
         }
-    }, [dispatch]);
+    }, [dispatch, user, userId]);
+    
 
     useEffect(() => {
         if (user) {
-            setName(user.name || '');
-            setEmail(user.email || '');
-            setMobile(user.mobile || '');
-            setImagePreview(user.profileImage || "https://via.placeholder.com/150"); // Set initial image from user data
+            setName(user.name);
+            setEmail(user.email);
+            setImagePreview(user.profileImage || "https://via.placeholder.com/150");
         }
     }, [user]);
 
-    const handleImageUpload = async (file) => {
-        const formData = new FormData();
-        formData.append('image', file);
-
-        try {
-            const response = await axios.post('/api/v1/upload', formData);
-            return response.data.url;
-        } catch (error) {
-            toast.error('Image upload failed.');
-            throw error;
-        }
-    };
-
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
-
-        let imageUrl = '';
-        if (profileImage) {
-            imageUrl = await handleImageUpload(profileImage);
-        }
-
-        dispatch(updateUserProfile({ name, email, mobile, profileImage: imageUrl }))
+        dispatch(updateUserProfile({ name, email }))
             .then(() => {
                 toast.success('Profile updated successfully!');
-                // Update image preview after successful update
-                setImagePreview(imageUrl || imagePreview);
             })
             .catch((err) => {
                 toast.error(err.message);
             });
     };
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        const formData = new FormData();
+        formData.append('profileImage', file);
+    
+        try {
+            const response = await axios.post('http://localhost:5000/api/v1/users/upload-profile-image', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+                withCredentials: true // Ensure cookies are sent with the request
+            });
+    
+            setProfileImage(response.data.profileImageUrl); // Update profile image with the URL from Cloudinary
+            setImagePreview(response.data.profileImageUrl); // Update preview
+            dispatch(updateUserProfile({ profileImage: response.data.profileImageUrl })); // Save the profile image URL in the user profile
+            toast.success('Profile image updated successfully!');
+        } catch (err) {
+            toast.error('Failed to upload image');
+        }
+    };
+    
 
     const handlePasswordChange = () => {
         navigate('/forgot-password');
@@ -80,10 +83,15 @@ const UserProfile = () => {
     };
 
     const handleDeleteAccount = () => {
-        if (user) { // Check if user is available
-          dispatch(deleteUserAccount(user._id, password)) // Pass user ID and password
+        if (user) {
+          dispatch(deleteUserAccount(user._id, password))
             .then(() => {
               toast.success('User account deleted successfully!');
+              
+              // Clear cookies and token
+              document.cookie = 'jwt=; Max-Age=0; path=/'; // Clear the token from cookies
+      
+              // Navigate to home page or login page
               navigate('/');
             })
             .catch((err) => {
@@ -91,110 +99,127 @@ const UserProfile = () => {
             });
         }
       };
+      
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100 p-6">
             <div className="flex w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden">
-                {/* Left Section: User Image and Name */}
+                {/* Left Section: User Name and Profile Image */}
                 <div className="w-1/3 bg-blue-600 flex flex-col items-center justify-center p-6">
-                    <img 
-                        className="rounded-full h-32 w-32 object-cover border-4 border-white mb-4" 
-                        src={imagePreview} 
+                    <img
+                        className="rounded-full h-32 w-32 object-cover border-4 border-white mb-4" // Profile logo larger (32x32)
+                        src={imagePreview}
                         alt="User Avatar"
                     />
-                    <h2 className="text-white text-2xl font-semibold">{name}</h2>
+                    <h2 className="text-white text-2xl font-semibold mb-2">{name}</h2>
+
+                    {/* Upload Image Button */}
+                    <input
+                        type="file"
+                        id="profileImage"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                    />
+                    <label
+                        htmlFor="profileImage"
+                        className="mt-2 cursor-pointer bg-gray-200 text-gray-700 py-1 px-2 text-sm rounded hover:bg-gray-300" // Smaller button
+                    >
+                        Upload Profile Image
+                    </label>
                 </div>
 
                 {/* Right Section: User Info and Actions */}
                 <div className="w-2/3 p-8">
                     <h2 className="text-3xl font-semibold text-gray-800 mb-6">{name} Information</h2>
 
-                    {loading && <p>Loading...</p>}
-                    {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Profile Image</label>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => {
-                                    setProfileImage(e.target.files[0]);
-                                    setImagePreview(URL.createObjectURL(e.target.files[0]));
-                                }}
-                                className="block w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
-                            />
+                    {loading ? (
+                        <div className="flex justify-center">
+                            <FaSpinner className="animate-spin h-8 w-8 text-blue-600" />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Email</label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="block w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Mobile</label>
-                            <input
-                                type="text"
-                                value={mobile}
-                                onChange={(e) => setMobile(e.target.value)}
-                                className="block w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
-                            />
-                        </div>
-                        <button
-                            type="submit"
-                            className="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                        >
-                            Update Profile
-                        </button>
-                    </form>
+                    ) : (
+                        <>
+                            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
-                    <div className="mt-6">
-                        <button
-                            onClick={handlePasswordChange}
-                            className="w-full bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded hover:bg-gray-400 focus:outline-none"
-                        >
-                            Change Password
-                        </button>
-                    </div>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Name</label>
+                                    <input
+                                        type="text"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        className="block w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="block w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                        readOnly
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                >
+                                    Update Profile
+                                </button>
+                            </form>
 
-                    <div className="mt-6">
-                        <button
-                            onClick={handleLogout}
-                            className="w-full bg-red-600 text-white font-semibold py-2 px-4 rounded hover:bg-red-700 focus:outline-none"
-                        >
-                            Logout
-                        </button>
-                    </div>
+                            {/* Change Password Section */}
+                            <div className="mt-6">
+                                <h3 className="text-lg font-semibold mb-2">Change Password</h3>
+                                <button
+                                    onClick={handlePasswordChange}
+                                    className="w-full bg-gray-300 text-gray-800 font-semibold py-1 px-2 rounded hover:bg-gray-400 focus:outline-none"
+                                >
+                                    Change Password
+                                </button>
+                            </div>
 
-                    <div className="mt-6 text-center">
-                        <button
-                            onClick={() => setDeleteAccountVisible(!isDeleteAccountVisible)}
-                            className="text-red-600 hover:underline font-medium"
-                        >
-                            {isDeleteAccountVisible ? 'Cancel Account Deletion' : 'Delete Account'}
-                        </button>
-                    </div>
+                            {/* Logout Section */}
+                            <div className="mt-6">
+                                <h3 className="text-lg font-semibold mb-2">Logout</h3>
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full bg-red-600 text-white font-semibold py-1 px-2 rounded hover:bg-red-700 focus:outline-none"
+                                >
+                                    Logout
+                                </button>
+                            </div>
 
-                    {isDeleteAccountVisible && (
-                        <div className="mt-4">
-                            <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="block w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border rounded focus:outline-none focus:ring-2 focus:ring-red-300"
-                                required
-                            />
-                            <button
-                                onClick={handleDeleteAccount}
-                                className="w-full mt-2 bg-red-600 text-white font-semibold py-2 px-4 rounded hover:bg-red-700 focus:outline-none"
-                            >
-                                Confirm Deletion
-                            </button>
-                        </div>
+                            {/* Delete Account Section */}
+                            <div className="mt-6">
+                                <h3 className="text-lg font-semibold mb-2">Delete Account</h3>
+                                <button
+                                    onClick={() => setDeleteAccountVisible(!isDeleteAccountVisible)}
+                                    className="text-red-600 hover:underline font-medium"
+                                >
+                                    {isDeleteAccountVisible ? 'Cancel Account Deletion' : 'Delete Account'}
+                                </button>
+                            </div>
+
+                            {isDeleteAccountVisible && (
+                                <div className="mt-4">
+                                    <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="block w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border rounded focus:outline-none focus:ring-2 focus:ring-red-300"
+                                        required
+                                    />
+                                    <button
+                                        onClick={handleDeleteAccount}
+                                        className="w-full mt-2 bg-red-600 text-white font-semibold py-1 px-2 rounded hover:bg-red-700 focus:outline-none"
+                                    >
+                                        Confirm Deletion
+                                    </button>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

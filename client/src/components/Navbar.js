@@ -22,9 +22,9 @@ const Navbar = () => {
     setIsBusinessDropdownOpen(!isBusinessDropdownOpen);
   };
 
-  const handleLogout = () => {    
+  const handleLogout = () => {
     // Dispatch logout action
-    dispatch(logout()); 
+    dispatch(logout());
 
     // Show toast notification
     toast.success('You have logged out successfully!');
@@ -33,11 +33,7 @@ const Navbar = () => {
     setTimeout(() => {
       navigate('/'); // Redirect to login page or home page
     }, 2000); // Delay for 2 seconds
-
   };
-  
-
-
 
   return (
     <nav className="bg-gray-900 w-full z-50 p-4 shadow-lg">
@@ -70,7 +66,7 @@ const Navbar = () => {
 
         {/* Navigation Links */}
         <ul className="flex items-center space-x-8">
-          {/* Login and Register Links */}
+          {/* User Links */}
           <li>
             <Link
               to="/login"
@@ -94,10 +90,10 @@ const Navbar = () => {
           <li>
             <Link
               to="/profile"
-              className={`text-white hover:text-blue-400 transition duration-300 flex items-center space-x-2 ${location.pathname === '/profile' ? 'font-bold' : ''}`}
+              className={`text-white hover:text-blue-400 transition duration-300 ${location.pathname === '/profile' ? 'font-bold' : ''}`}
             >
-              <FontAwesomeIcon icon={faUserCircle} />
-              <span>User Profile</span>
+              <FontAwesomeIcon icon={faUserCircle} className="mr-2" />
+              Profile
             </Link>
           </li>
 
@@ -131,8 +127,8 @@ const Navbar = () => {
                     className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
                     onClick={() => setIsBusinessDropdownOpen(false)}
                   >
-                    <FontAwesomeIcon icon={faPlusCircle} />
-                    <span>Add a Business</span>
+                    <FontAwesomeIcon icon={faUserPlus} />
+                    <span>Register Business</span>
                   </Link>
                 </li>
                 <li>
@@ -142,7 +138,37 @@ const Navbar = () => {
                     onClick={() => setIsBusinessDropdownOpen(false)}
                   >
                     <FontAwesomeIcon icon={faSignInAlt} />
-                    <span>Login to Business Account</span>
+                    <span>Login to Business</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/business/verify-otp"
+                    className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                    onClick={() => setIsBusinessDropdownOpen(false)}
+                  >
+                    <FontAwesomeIcon icon={faUserTie} aria-hidden="true" />
+                    <span>Verify OTP</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/business/forgot-password"
+                    className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                    onClick={() => setIsBusinessDropdownOpen(false)}
+                  >
+                    <FontAwesomeIcon icon={faUserCircle} />
+                    <span>Forgot Password</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/business/reset-password"
+                    className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                    onClick={() => setIsBusinessDropdownOpen(false)}
+                  >
+                    <FontAwesomeIcon icon={faUserCircle} />
+                    <span>Reset Password</span>
                   </Link>
                 </li>
                 <li>

@@ -1,41 +1,55 @@
 const mongoose = require('mongoose');
+const validator = require('validator');
 
-const reviewSchema = mongoose.Schema({
+// Review schema
+const reviewSchema = new mongoose.Schema({
     business: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Business',
         required: true,
-        index: true // indexing the field
+        index: true,
     },
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
-        index: true // indexing the field
+        index: true,
     },
     rating: {
         type: Number,
         required: true,
         min: 1,
-        max: 5
+        max: 5,
     },
     comment: {
         type: String,
         required: true,
-        minlength: 5, // Minimum length for comment
-        maxlength: 500 // Maximum length for comment
+        minlength: 5,
+        maxlength: 500,
     },
     images: [{
-        type: String, // URL for uploaded images
-        validate: {
-            validator: function (value) {
-                return value ? validator.isURL(value) : true; // Validate each image URL
-            },
-            message: 'Invalid URL for image',
+        type: String,
+        validate: [validator.isURL, 'Invalid URL for image'],
+        default: [],
+    }],
+    replies: [{
+        replyText: {
+            type: String,
+            minlength: 5,
+            maxlength: 500,
         },
-    }]
+        replyImages: [{
+            type: String,
+            validate: [validator.isURL, 'Invalid URL for image'],
+            default: [],
+        }],
+        repliedAt: {
+            type: Date,
+            default: Date.now,
+        }
+    }],
 }, {
-    timestamps: true
+    timestamps: true,
 });
 
 module.exports = mongoose.model('Review', reviewSchema);

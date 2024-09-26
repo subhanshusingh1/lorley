@@ -5,10 +5,14 @@ import authReducer from './reducers/authReducer';
 import { 
   businessRegister, 
   businessLogin, 
-  businessDetails, 
+  businessDetails,   // Import the businessDetails reducer
   allBusinesses, 
   updateBusiness, 
-  uploadBusinessPhoto 
+  uploadBusinessPhoto, 
+  businessOtp,
+  businessOtpVerification,
+  businessForgotPassword,
+  businessResetPassword
 } from './reducers/businessReducers';
 import reviewReducer from './reducers/reviewReducers';
 
@@ -16,12 +20,13 @@ import reviewReducer from './reducers/reviewReducers';
 const rootReducer = combineReducers({
   auth: authReducer,                 // Authentication reducer
   business: combineReducers({
-    register: businessRegister,      // Business registration reducer
-    login: businessLogin,            // Business login reducer
-    details: businessDetails,        // Fetch business details reducer
-    all: allBusinesses,              // Fetch all businesses reducer
-    update: updateBusiness,          // Update business dashboard reducer
-    uploadPhoto: uploadBusinessPhoto // Upload business logo/photos reducer
+    businessRegister: businessRegister,
+    businessOtp: businessOtp,
+    businessOtpVerification: businessOtpVerification,
+    businessLogin: businessLogin,
+    businessForgotPassword: businessForgotPassword,
+    businessResetPassword: businessResetPassword,
+    businessDetails: businessDetails, // Add the businessDetails reducer here
   }),
   review: reviewReducer,              // Review reducer
 });

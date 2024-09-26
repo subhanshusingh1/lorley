@@ -26,10 +26,10 @@ const LoginPage = () => {
       setError('Please enter a valid email address.');
       return;
     }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters long.');
-      return;
-    }
+    // if (password.length < 8) {
+    //   setError('Password must be at least 8 characters long.');
+    //   return;
+    // }
 
     setLoading(true);
     const response = await dispatch(loginUser(email, password));
@@ -37,7 +37,7 @@ const LoginPage = () => {
 
     if (response.success) {
       toast.success('Login successful!');
-      navigate('/dashboard');
+      navigate('/');
     } else {
       toast.error(response.message || 'Login failed. Please check your credentials.');
     }

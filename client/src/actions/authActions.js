@@ -21,15 +21,18 @@ import {
   USER_RESET_PASSWORD_REQUEST,
   USER_RESET_PASSWORD_SUCCESS,
   USER_RESET_PASSWORD_FAIL,
-  UPDATE_PROFILE_REQUEST, // Add this type
+  UPDATE_PROFILE_REQUEST,
   UPDATE_PROFILE_SUCCESS,
   UPDATE_PROFILE_FAIL,
-  DELETE_ACCOUNT_REQUEST, // Add this type
+  DELETE_ACCOUNT_REQUEST, 
   DELETE_ACCOUNT_SUCCESS,
   DELETE_ACCOUNT_FAIL,
-  // For sending OTP
-
-
+  FETCH_PROFILE_REQUEST,
+  FETCH_PROFILE_SUCCESS,
+  FETCH_PROFILE_FAIL,
+  // FETCH_PROFILE_REQUEST,
+  // FETCH_PROFILE_SUCCESS,
+  // FETCH_PROFILE_FAIL,
 } from './types';
 
 // Register a User
@@ -152,20 +155,29 @@ export const verifyOtp = (email, otp) => async (dispatch) => {
 };
 
 
-
 // login User
 export const loginUser = (email, password) => async (dispatch) => {
   try {
     dispatch({ type: LOGIN_REQUEST });
-    const res = await axios.post('http://localhost:5000/api/v1/users/login', { email, password });
+    console.log("Dispatching login request for:", { email, password });
+
+    const res = await axios.post('http://localhost:5000/api/v1/users/login', { email, password }, {withCredentials: true});
+
+    console.log("Login response:", res.data); // Log the full response for debugging
 
     if (res.data.success) {
+      // Adjust destructuring to match your API response
+      const user = res.data.data.user; // Access the user object from the data
+
+      console.log("Login successful! User:", user); // Log user
+
       dispatch({
         type: LOGIN_SUCCESS,
-        payload: res.data,
+        payload: { user }, // No token needed in payload since it's in the cookie
       });
       return { success: true };
     } else {
+      console.log("Login failed:", res.data.message);
       dispatch({
         type: LOGIN_FAIL,
         payload: res.data.message || 'Login failed. Please try again.',
@@ -173,6 +185,7 @@ export const loginUser = (email, password) => async (dispatch) => {
       return { success: false, message: res.data.message || 'Login failed.' };
     }
   } catch (error) {
+    console.error("Login error:", error);
     const errorMessage = error.response?.data?.message || 'An error occurred during login.';
     dispatch({
       type: LOGIN_FAIL,
@@ -182,10 +195,12 @@ export const loginUser = (email, password) => async (dispatch) => {
   }
 };
 
+
+
 // Logout action
 export const logout = () => (dispatch) => {
   // Remove token from cookies
-  Cookies.remove('token'); 
+  Cookies.remove('jwt'); 
   
   // Dispatch logout action
   dispatch({ type: LOGOUT });
@@ -234,6 +249,37 @@ export const resetPassword = (email, newPassword) => async (dispatch) => {
   }
 };
 
+// Fetch user profile by ID 
+export const fetchUserProfile = (userId) => async (dispatch) => {
+  console.log("fetchUserProfile triggered with userId:", userId); // Check if action is called
+  
+  try {
+    dispatch({ type: FETCH_PROFILE_REQUEST });
+
+    // Ensure the URL is correct and the userId is valid
+    const response = await axios.get(`http://localhost:5000/api/v1/users/profile/${userId}`, { withCredentials: true });
+    console.log("Profile response:", response.data); // Log the response data
+    
+    const { data } = response;
+
+    // Ensure that the structure of the response matches what you're expecting
+    dispatch({
+      type: FETCH_PROFILE_SUCCESS,
+      payload: {
+        _id: data.data._id,
+        name: data.data.name,
+        email: data.data.email,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching profile:", error); // Log the error
+    dispatch({
+      type: FETCH_PROFILE_FAIL,
+      payload: error.response?.data?.message || error.message,
+    });
+  }
+};
+
 // Update User Profile
 export const updateUserProfile = (userData) => async (dispatch) => {
   try {
@@ -259,12 +305,24 @@ export const updateUserProfile = (userData) => async (dispatch) => {
 // Delete User Account
 export const deleteUserAccount = (userId, password) => async (dispatch) => {
   try {
-    dispatch({ type: DELETE_ACCOUNT_REQUEST }); // Dispatch loading state
+    dispatch({ type: DELETE_ACCOUNT_REQUEST });
+
+    const token = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('jwt='))
+      ?.split('=')[1]; // Get token from cookie
+
+    if (!token) {
+      throw new Error('Token not found in cookies.');
+    }
+
     await axios.delete(`http://localhost:5000/api/v1/users/profile/${userId}`, {
       headers: {
+        'Authorization': `Bearer ${token}`, // Send token in header
         'Content-Type': 'application/json',
       },
-      data: { password },
+      data: { password }, // Send password with request
+      withCredentials: true, // Ensure credentials (cookies) are included
     });
 
     dispatch({ type: DELETE_ACCOUNT_SUCCESS });
@@ -279,20 +337,10 @@ export const deleteUserAccount = (userId, password) => async (dispatch) => {
 };
 
 
-// Fetch user profile 
-export const fetchUserProfile = () => async (dispatch) => {
-  try {
-    dispatch({ type: UPDATE_PROFILE_REQUEST });
 
-    const { data } = await axios.get('http://localhost:5000/api/v1/users/profile'); // Adjust this API as per your backend
 
-    dispatch({ type: UPDATE_PROFILE_SUCCESS, payload: data });
-  } catch (error) {
-    dispatch({
-      type: UPDATE_PROFILE_FAIL,
-      payload: error.response && error.response.data.message
-        ? error.response.data.message
-        : error.message,
-    });
-  }
-};
+
+
+
+
+

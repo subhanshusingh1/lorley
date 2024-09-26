@@ -7,6 +7,8 @@ const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('../config/cloudinary');
+const mongoose = require('mongoose');
+const fs = require('fs');
 
 // Configure Multer storage with Cloudinary
 const storage = new CloudinaryStorage({
@@ -128,13 +130,6 @@ exports.verifyOtp = asyncHandler(async (req, res) => {
     return res.status(400).send({ message: 'Invalid or Expired OTP' });
   }
 
-  // Check if OTP is expired
-  // const currentTime = new Date();
-  // const timeDifference = currentTime - otpDocument.createdAt;
-  // if (timeDifference > 600000) { // 10 minutes expiration time
-  //   return res.status(400).send({ message: 'OTP has expired. Please request a new one.' });
-  // }
-
   // Fetch user
   const user = await User.findOne({ email });
 
@@ -154,12 +149,12 @@ exports.verifyOtp = asyncHandler(async (req, res) => {
 // @Route POST /api/v1/users/login
 // Controller for user login
 exports.login = asyncHandler(async (req, res) => {
-  const { email, password} = req.body;
+  const { email, password } = req.body;
 
   // Validate email and password
-    if (!email || !password) {
-      return res.status(400).send({ message: 'Email and password are required' });
-    }
+  if (!email || !password) {
+    return res.status(400).send({ message: 'Email and password are required' });
+  }
 
   // Find the user by email
   const user = await User.findOne({ email });
@@ -167,32 +162,38 @@ exports.login = asyncHandler(async (req, res) => {
     return res.status(400).send({ message: 'User does not exist. Please register.' });
   }
 
-  // Check if user is verified their email by otp after registration
+  // Check if the user has verified their email
   const otpDocument = await OTP.findOne({ email });
   if (!otpDocument) {
     return res.status(400).send({ message: 'Please verify your email first.' });
   }
 
-   // Handle password login
-   const isMatch = await user.comparePassword(password);
-   if (!isMatch) {
-     return res.status(400).send({ message: 'Invalid password' });
-   }
+  // Handle password login
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) {
+    return res.status(400).send({ message: 'Invalid password' });
+  }
 
-  // Create JWT token for the user
-  const token = await user.createJwt(res);
+  // Create JWT tokens and store them in cookies
+  await user.createJwt(res);  // This will create both access and refresh tokens
 
   // Respond with success
   res.status(200).json({
     success: true,
     data: {
-      _id: user._id,
-      email: user.email,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
     },
     message: 'User logged in successfully',
-    token,
   });
 });
+
+
+
+
 
 
 // @Desc Forgot Password
@@ -270,39 +271,154 @@ exports.resetPassword = asyncHandler(async (req, res) => {
   });
 });
 
+// @Desc Get User Profile Details
+// @Route Get /api/v1/users/profile/:id
+// Controller to fetch email and name for user profile page 
+exports.getProfileById = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
 
-// @Desc Delete User Account
-// @Route DELETE /api/v1/profile/:id
-exports.deleteUserProfile = asyncHandler(async (req, res) => {
-  const { id } = req.params; 
-  const { password } = req.body;
+  // Log the received user ID
+  console.log("User ID received:", userId);
+
+  // Validate ObjectId
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: "Invalid user ID" });
+  }
 
   try {
-      // Find the user by their ID
-      const user = await User.findById(id);
+      const user = await User.findById(userId);
       
-      // If user not found, return an error
       if (!user) {
-          return res.status(404).json({ message: 'User not found.' });
+          return res.status(404).json({ success: false, message: "User not found" });
       }
 
-      // Use the comparePassword method from the User model
-      const isMatch = await user.comparePassword(password);
-      if (!isMatch) {
-          return res.status(400).json({ message: 'Incorrect password.' });
+      res.status(200).json({
+        success: true,
+        data: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+        },
+        message: "User details retrieved successfully",
+      });
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+});
+
+// @Desc Upload Profile Image
+// @Route POST /api/v1/users/upload-profile-image
+// Upload Profile Image Controller
+exports.uploadProfileImage = asyncHandler(async (req, res) => {
+    const userId = req.user._id;  // Get userId from req.user, populated by protect middleware
+
+    if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded." });
+    }
+
+    try {
+        // Upload the file to Cloudinary
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: 'profile_images',
+            width: 150,
+            height: 150,
+            crop: "fill"
+        });
+
+        // Remove the file from local storage
+        fs.unlinkSync(req.file.path);
+
+        // Update the user's profile with the new image URL
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { profileImage: result.secure_url },
+            { new: true }
+        );
+
+        res.status(200).json({
+            message: "Profile image uploaded successfully.",
+            profileImageUrl: user.profileImage
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: "Error uploading profile image", error: error.message });
+    }
+});
+
+
+// @Desc Delete User Account
+// @Route DELETE /api/v1/users/profile/:id
+// Delete user Account
+exports.deleteUser = asyncHandler(async (req, res) => {
+  const { id } = req.params; // Get user ID from params
+
+  // Check if the user exists
+  const user = await User.findById(id);
+  if (!user) {
+    return res.status(400).json({ message: `No user found with id: ${id}` });
+  }
+
+  // Check if OTP data exists for the user
+  const otpData = await OTP.findOne({ email: user.email });
+  if (!otpData) {
+    return res.status(400).json({ message: 'No OTP data found for the user' });
+  }
+
+  // Proceed to delete the user and OTP data
+  await User.deleteOne({ _id: id });
+  await OTP.deleteOne({ _id: otpData._id });
+
+  res.status(200).json({
+    success: true,
+    message: 'User Profile Deleted Successfully!',
+  });
+});
+
+
+// @Desc Generate Refresh Token
+// @Route Post /api/v1/users/refresh-token
+exports.refreshToken = asyncHandler(async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) {
+      return res.status(401).json({
+          success: false,
+          message: 'Refresh Token not found, please log in again.',
+      });
+  }
+
+  try {
+      // Verify the refresh token
+      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET); // Use a different secret for refresh tokens
+
+      // Find the user by the decoded token's user id
+      const user = await User.findById(decoded._id).select('-password');
+      if (!user) {
+          return res.status(404).json({
+              success: false,
+              message: 'User not found',
+          });
       }
 
-      // Delete the user account
-      await User.findByIdAndDelete(id);
+      // Create a new access token
+      const newAccessToken = await user.createJwt(res); // This method should create and return the new access token
 
-      // Also delete the corresponding OTP entry
-      await OTP.findByIdAndDelete({ userId: id }); // Assuming OTP model has a userId field to link to the user
-
-      res.status(200).json({ message: 'User account deleted successfully.' });
+      res.status(200).json({
+          success: true,
+          accessToken: newAccessToken,
+      });
   } catch (error) {
-      res.status(500).json({ message: 'Server error. Please try again.' });
+      console.error('Refresh token error:', error);
+      return res.status(401).json({
+          success: false,
+          message: 'Invalid Refresh Token, please log in again.',
+      });
   }
 });
+
+
+
 
 
 

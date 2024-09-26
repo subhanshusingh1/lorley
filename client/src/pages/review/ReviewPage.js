@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaStar } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom'; // For navigation
-import { submitReview } from '../actions/reviewActions';
+import { submitReview } from '../../actions/reviewActions';
 
 const Review = ({ businessId, businessName, userName }) => {
     const dispatch = useDispatch();

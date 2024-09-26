@@ -7,10 +7,11 @@ const connectDB = require('./config/db');
 const cookieParser = require('cookie-parser');
 const userRoutes = require('./routes/userRoutes');
 const businessRoutes = require('./routes/businessRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const jobRoutes = require('./routes/jobRoutes');
-const newsRoutes = require('./routes/newsRoutes');
+// const adminRoutes = require('./routes/adminRoutes');
+// const jobRoutes = require('./routes/jobRoutes');
+// const newsRoutes = require('./routes/newsRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const categoryRoutes = require('./routes/category.js');
 const helmet = require('helmet');
 const cors = require('cors');
 const { notFound, errorHandler } = require('./middlewares/errorMiddleware.js');
@@ -23,11 +24,12 @@ app.use(helmet());
 // app.use(cors());
 
 // Use CORS middleware
-app.use(cors({
-  origin: 'http://localhost:3000', // Frontend URL
-//   methods: 'GET,POST,PUT,DELETE',
-  credentials: true,
-}));
+app.use(
+    cors({
+      credentials: true,
+      origin: "http://localhost:3000",
+    })
+  );
 
 
 // parse json 
@@ -40,10 +42,9 @@ app.use(cookieParser());
 // Routes
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/business', businessRoutes);
-app.use('/api/v1/admin', adminRoutes);
-app.use('/api/v1/jobs', jobRoutes);
-app.use('/api/v1/news', newsRoutes);
-app.use('/api/v1/reviews', reviewRoutes);
+// app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/business', reviewRoutes);
+app.use('/api/v1/categories', categoryRoutes);
 
 // for undefined routes and handling errors
 app.use(notFound);

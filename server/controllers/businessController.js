@@ -4,49 +4,296 @@ const bcrypt = require('bcryptjs');
 const { sendEmailNotification, createInAppNotification } = require('./notificationController');
 const asyncHandler = require('express-async-handler');
 const jwt = require('jsonwebtoken');
+const BusinessOtp = require('../models/businessOtpModel'); 
+const Review = require('../models/Review'); 
+// generate otp
+const generateOtp = require('../utils/otp'); // Adjust the path as necessary
+// mailgun
+const mailgun = require('mailgun-js');
+const mg = mailgun({ apiKey: process.env.MAILGUN_API_KEY, domain: process.env.MAILGUN_DOMAIN });
+const { sendEmail } = require('../utils/mailgunService'); // Import the Mailgun sendEmail function
 
-// Register a new business (done after user registration)
+// Helper function to check OTP validity
+const isOtpValid = (otpDocument) => {
+    const currentTime = new Date();
+    return otpDocument && (currentTime - otpDocument.createdAt) < 600000; // 10 minutes expiration time
+};
+
+// Register a new business
 exports.addBusiness = asyncHandler(async (req, res) => {
-    const { name, description, address, businessType, contactInfo, logo, openingHours, photos } = req.body;
+    const { name, email, mobile, businessType, category } = req.body;
 
+    // Check if the required fields are provided
+    if (!name || !email || !mobile || !businessType || !category) {
+        return res.status(400).json({ message: 'Please provide all required fields.' });
+    }
+
+    // Create a new business
     const newBusiness = new Business({
         name,
-        description,
-        address,
+        email,
+        mobile,
         businessType,
-        contactInfo,
-        logo,
-        openingHours,
-        photos,
-        owner: req.user.id,
+        category,
+        // Additional details can be added later
     });
 
     const business = await newBusiness.save();
-    res.status(201).json(business);
+    res.status(201).json({
+        message: 'Business registered successfully!',
+        business, // Send back the registered business details if needed
+    });
 });
 
-// Login a business
-exports.businessLogin = asyncHandler(async (req, res) => {
+
+// Controller to send OTP
+exports.sendOtp = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    // Validate email presence
+    if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Check if business already exists with this email
+    const business = await Business.findOne({ email });
+
+    if (!business) {
+        return res.status(400).json({ message: 'A business does not exist. Please register first.' });
+    }
+
+    // Generate OTP
+    const otp = generateOtp();
+
+    // Save OTP to the database
+    await BusinessOtp.create({
+        email,
+        otp,
+        createdAt: new Date(),
+    });
+
+    // Send OTP to the business via email using the utility function
+    await sendEmail(email, 'Your OTP for Business Registration', `Your OTP is: ${otp}. It is valid for a limited time.`);
+
+    // Send response
+    res.status(200).json({
+        success: true,
+        message: 'OTP sent successfully to the provided email.',
+    });
+});
+
+
+
+// Controller to verify otp
+exports.verifyOtp = asyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
+
+    // Validate email and OTP presence
+    if (!email || !otp) {
+        return res.status(400).send({ message: 'Email and OTP are required' });
+    }
+
+    // Check for existing OTP document
+    const otpDocument = await BusinessOtp.findOne({ email });
+
+    if (!otpDocument) {
+        return res.status(404).send({ message: 'No OTP record found for the requested email' });
+    }
+
+    // Verify OTP
+    if (otpDocument.otp !== otp || !isOtpValid(otpDocument)) {
+        return res.status(400).send({ message: 'Invalid or Expired OTP' });
+    }
+
+    // Fetch user
+    const business = await Business.findOne({ email });
+
+    // Create JSON Web Token (JWT) and store it in cookies
+    const token = await business.createJwt(res);
+
+    // Respond with success
+    res.status(200).send({
+        success: true,
+        token,
+        message: 'OTP verified successfully',
+    });
+});
+
+
+// @Desc Business Login
+// @Route POST /api/v1/business/login
+// Controller for business login
+exports.login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    // Validate email and password
+    if (!email || !password) {
+        return res.status(400).send({ message: 'Email and password are required' });
+    }
 
-    if (!user) {
+    // Find the business by email
+    const business = await Business.findOne({ email });
+    if (!business) {
+        return res.status(400).send({ message: 'Business does not exist. Please register.' });
+    }
+
+    // Check if the business has verified their email
+    const otpDocument = await BusinessOtp.findOne({ email });
+    if (!otpDocument) {
+        return res.status(400).send({ message: 'Please verify your email first.' });
+    }
+
+    // Handle password login
+    const isMatch = await business.comparePassword(password); // Assuming comparePassword is defined in your Business model
+    if (!isMatch) {
+        return res.status(400).send({ message: 'Invalid password' });
+    }
+
+    // Create JWT tokens and store them in cookies
+    await business.createJwt(res); // This will create both access and refresh tokens
+
+    // Respond with success
+    res.status(200).json({
+        success: true,
+        data: {
+            business: {
+                _id: business._id,
+                name: business.name,
+                email: business.email,
+            },
+        },
+        message: 'Business logged in successfully',
+    });
+});
+
+// @Desc Forgot Password
+// @Route POST /api/v1/business/forgot-password
+// Controller for forgot password
+exports.forgotPassword = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+  
+    // Validate email presence
+    if (!email) {
+      return res.status(400).send({ message: 'Email is required' });
+    }
+  
+    // Check if business exists
+    const business = await Business.findOne({ email });
+    let otpData = await BusinessOtp.findOne({ email });
+  
+    if (!business) {
+      return res.status(404).send({ message: 'Business does not exist' });
+    }
+  
+    // Generate OTP
+    const otp = generateOtp();
+  
+    // Update OTP database
+    if (!otpData) {
+      otpData = new BusinessOtp({
+        email,
+        otp,
+        createdAt: new Date(),
+      });
+    } else {
+      otpData.otp = otp;
+      otpData.createdAt = new Date();
+    }
+  
+    await otpData.save();
+  
+    // Send OTP via email using the utility function
+    await sendEmail(email, 'Your OTP for Password Reset', `Your OTP is: ${otp}`);
+  
+    // Send response
+    res.status(200).send({
+      success: true,
+      message: 'OTP sent to your email for password reset',
+    });
+  });
+  
+
+// @Desc Reset Password
+// @Route POST /api/v1/business/reset-password
+// Controller for reset password
+exports.resetPassword = asyncHandler(async (req, res) => {
+  const { email, newPassword } = req.body;
+
+  // Validate input
+  if (!email || !newPassword) {
+    return res.status(400).send({ message: 'Email and new password are required' });
+  }
+
+  // Check if business exists
+  const business = await Business.findOne({ email });
+
+  if (!business) {
+    return res.status(404).send({ message: 'Business does not exist' });
+  }
+
+  // Update business password
+  business.password = newPassword; // You may want to hash the password here
+  await business.save();
+
+  // Send success response
+  res.status(200).send({
+    success: true,
+    message: 'Password reset successfully',
+  });
+});
+
+
+// Function to calculate average rating from reviews
+const calculateAverageRating = (reviews) => {
+    if (!reviews.length) return 0; // No reviews means average is 0
+    const total = reviews.reduce((acc, review) => acc + review.rating, 0); // Assuming rating is a field in the review
+    return total / reviews.length; // Calculate average
+};
+
+export const fetchBusinessById = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    // Fetch business details by ID
+    const business = await Business.findById(id)
+        .populate('category') // Populate category for more details
+        .populate({
+            path: 'reviews',
+            model: 'Review',
+            populate: {
+                path: 'user', // Populate user if needed (assuming reviews have a user reference)
+                select: 'name profileImage' // Adjust based on your user model
+            }
+        });
+
+    if (!business) {
         return res.status(404).json({ message: 'Business not found' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Format the response to include all necessary details
+    const businessData = {
+        id: business._id,
+        name: business.name,
+        logo: business.logo,
+        email: business.email,
+        mobile: business.mobile,
+        address: business.address,
+        category: business.category, // This will contain the category object
+        photos: business.photos,
+        totalReviews: business.reviews.length,
+        averageRating: calculateAverageRating(business.reviews),
+        openingHours: business.openingHours,
+        views: business.views, // Include view count
+        searchCount: business.searchCount // Include search count
+    };
 
-    if (!isMatch) {
-        return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
-        expiresIn: '1h',
-    });
-
-    res.json({ token, message: 'Login successful' });
+    res.json(businessData);
 });
+
+
+
+
+
+
 
 // Get all businesses with filtering (category, type, etc.)
 exports.getBusinesses = asyncHandler(async (req, res) => {
@@ -94,19 +341,19 @@ exports.deleteBusiness = asyncHandler(async (req, res) => {
     res.json({ message: 'Business removed' });
 });
 
-// Verify a business (mark it as pending for verification)
-exports.verifyBusiness = asyncHandler(async (req, res) => {
-    const businessId = req.params.id;
-    const business = await Business.findById(businessId);
+// // Verify a business (mark it as pending for verification)
+// exports.verifyBusiness = asyncHandler(async (req, res) => {
+//     const businessId = req.params.id;
+//     const business = await Business.findById(businessId);
 
-    if (!business) {
-        return res.status(404).json({ error: 'Business not found' });
-    }
+//     if (!business) {
+//         return res.status(404).json({ error: 'Business not found' });
+//     }
 
-    business.verificationStatus = 'Pending';
-    await business.save();
-    res.json({ message: 'Verification request submitted successfully' });
-});
+//     business.verificationStatus = 'Pending';
+//     await business.save();
+//     res.json({ message: 'Verification request submitted successfully' });
+// });
 
 // Get business by ID (including views increment and limited reviews)
 exports.getBusinessById = asyncHandler(async (req, res) => {
@@ -123,7 +370,7 @@ exports.getBusinessById = asyncHandler(async (req, res) => {
 
     // Limit to the most recent 5 reviews (if you have a `createdAt` field in reviews)
     const limitedReviews = business.reviews.slice(-5);
-    
+
     res.json({ ...business.toObject(), reviews: limitedReviews });
 });
 

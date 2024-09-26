@@ -1,163 +1,130 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { FaSpinner } from 'react-icons/fa';
-import ReviewComponent from '../ReviewPage'; // Import your ReviewComponent
-import { FaTrash, FaEdit } from 'react-icons/fa';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchBusinessById } from '../../actions/businessAction'; // Adjust the path as needed
+import { FaStar, FaPhoneAlt, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
+import Spinner from '../../components/Spinner'; // Create a spinner component or use an existing one
 
-const BusinessProfile = ({ businessId, userId }) => { // Add userId prop to identify the logged-in user
-    const [business, setBusiness] = useState(null);
-    const [reviews, setReviews] = useState([]);
-    const [userReview, setUserReview] = useState(null); // To store the user's own review
+const BusinessProfile = ({ businessId }) => {
+    const dispatch = useDispatch();
+    const { business, loading } = useSelector((state) => state.business.businessDetails); // Ensure you access the correct state slice
 
     useEffect(() => {
-        const fetchBusinessDetails = async () => {
-            try {
-                const response = await axios.get(`/api/business/${businessId}`);
-                setBusiness(response.data);
-                fetchReviews(); // Fetch reviews when business details are fetched
-            } catch (error) {
-                console.error('Error fetching business details:', error);
-            }
-        };
+        dispatch(fetchBusinessById(businessId));
+    }, [dispatch, businessId]);
 
-        const fetchReviews = async () => {
-            try {
-                const response = await axios.get(`/api/businesses/${businessId}/review`);
-                setReviews(response.data.reviews);
+    if (loading) {
+        return <Spinner />; // Show spinner while loading
+    }
 
-                // Find the user's review if it exists
-                const userReview = response.data.reviews.find(review => review.user._id === userId);
-                setUserReview(userReview);
-            } catch (error) {
-                console.error('Error fetching reviews:', error);
-            }
-        };
-
-        fetchBusinessDetails();
-    }, [businessId, userId]);
-
-    const handleDeleteReview = async (reviewId) => {
-        try {
-            await axios.delete(`/api/reviews/${reviewId}`);
-            setReviews(reviews.filter(review => review._id !== reviewId)); // Update the state to remove the deleted review
-            if (userReview && userReview._id === reviewId) {
-                setUserReview(null); // Clear user review if deleted
-            }
-        } catch (error) {
-            console.error('Error deleting review:', error);
-        }
-    };
-
-    if (!business) {
+    // Check if business is undefined or does not contain photos
+    if (!business || !business.photos) {
         return (
-            <div className="flex justify-center items-center h-screen bg-gray-50">
-                <div className="flex flex-col items-center space-y-4">
-                    <FaSpinner className="animate-spin text-6xl text-blue-500" />
-                    <p className="text-lg text-gray-600">Loading business details, please wait...</p>
-                </div>
+            <div className="flex justify-center items-center h-screen">
+                <p className="text-gray-500 text-xl font-semibold">Business not found.</p>
             </div>
         );
     }
 
     return (
-        <div className="business-profile container mx-auto p-6">
-            {/* Banner - Carousel */}
-            {business.photos && business.photos.length > 0 && (
-                <div className="banner w-full h-64 relative">
-                    <div className="absolute inset-0 overflow-hidden">
-                        <div className="carousel w-full h-full flex">
+        <div className="container mx-auto flex justify-center mb-8">
+            <div className="w-full lg:w-10/12">
+                {/* Carousel */}
+                <div className="carousel w-full h-96 relative">
+                    {business.photos.length > 0 ? (
+                        <div className="flex w-full h-full">
                             {business.photos.map((photo, index) => (
-                                <div key={index} className="w-full flex-shrink-0">
-                                    <img
-                                        className="w-full h-full object-cover"
-                                        src={photo}
-                                        alt={`Business Photo ${index + 1}`}
-                                    />
+                                <div key={index} className="w-1/4 flex-shrink-0">
+                                    <img className="w-full h-full object-cover" src={photo} alt={`Business Photo ${index + 1}`} />
                                 </div>
                             ))}
                         </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Main Content */}
-            <div className="flex flex-col lg:flex-row mt-6">
-                {/* Left Section: Business Logo, Name & Description */}
-                <div className="lg:w-2/3 p-4">
-                    {/* Business Logo */}
-                    <div className="flex items-center space-x-4">
-                        <img
-                            className="w-32 h-32 object-cover rounded-full"
-                            src={business.logo}
-                            alt={`${business.name} logo`}
-                        />
-                        <h1 className="text-4xl font-bold">{business.name}</h1>
-                    </div>
-
-                    {/* Description */}
-                    <div className="mt-4">
-                        <p className="text-lg text-gray-700">{business.description}</p>
-                    </div>
+                    ) : (
+                        <div className="w-full h-full flex justify-center items-center bg-gray-200">
+                            <p className="text-gray-500">No images available</p>
+                        </div>
+                    )}
                 </div>
 
-                {/* Right Section: Contact, Address, and Opening Hours */}
-                <div className="lg:w-1/3 p-4 border-l border-gray-200">
-                    <div className="contact-details bg-gray-100 p-4 rounded-lg shadow-lg">
-                        <h2 className="text-xl font-semibold mb-4">Contact Information</h2>
-                        <p className="mb-2"><strong>Phone:</strong> {business.contactNumber}</p>
-                        <p className="mb-4"><strong>Address:</strong> {business.address}</p>
-                        {business.openingHours && (
+                {/* Main Content */}
+                <div className="flex flex-col lg:flex-row mt-6 justify-center items-stretch space-y-4 lg:space-y-0 lg:space-x-6">
+                    {/* Left Section */}
+                    <div className="lg:w-2/3 w-full p-6">
+                        <div className="flex items-center justify-center lg:justify-start">
+                            {business.logo && (
+                                <img
+                                    src={business.logo} // Assuming business.logo contains the URL for the logo
+                                    alt={`${business.name} Logo`}
+                                    className="w-12 h-12 mr-3 object-cover rounded-full" // Adjust size and styling as needed
+                                />
+                            )}
+                            <h1 className="text-3xl font-semibold text-gray-800">{business.name}</h1>
+                        </div>
+                        
+                        <div className="flex justify-center lg:justify-start items-center mt-4 space-x-2">
+                            <div className="flex items-center">
+                                {Array.from({ length: 5 }, (_, index) => (
+                                    <FaStar key={index} className={`h-5 w-5 ${index < business.averageRating ? 'text-yellow-500' : 'text-gray-300'}`} />
+                                ))}
+                            </div>
+                            <span className="ml-2 text-gray-500 text-sm">({business.totalReviews} reviews)</span>
+                        </div>
+
+                        <div className="mt-6 text-base text-gray-700 text-center lg:text-left leading-relaxed">
+                            <p>Category: <span className="font-medium">{business.category}</span></p>
+                            <div className="mt-6 flex justify-center lg:justify-start space-x-3">
+                                <button className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-md hover:from-blue-600 hover:to-blue-700 transition-all duration-300 text-sm">
+                                    Add Review
+                                </button>
+                                <button className="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-4 py-2 rounded-md hover:from-gray-600 hover:to-gray-700 transition-all duration-300 text-sm">
+                                    Share
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Opening Hours Section */}
+                        <div className="mt-8 bg-gray-100 p-4 rounded-md shadow">
+                            <h2 className="text-lg font-medium mb-2">Opening Hours</h2>
+                            <div className="flex flex-col">
+                                {Object.entries(business.openingHours).map(([day, { open, close }]) => (
+                                    <div key={day} className="flex justify-between py-1 border-b last:border-b-0">
+                                        <span className="text-gray-700">{day.charAt(0).toUpperCase() + day.slice(1)}</span>
+                                        <span className="text-gray-500">{open} - {close}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Section */}
+                    <div className="lg:w-1/3 w-full p-6">
+                        <div className="text-center lg:text-left">
+                            <h2 className="text-lg font-medium mb-4">Contact Information</h2>
+                            <p className="mb-4 flex justify-center lg:justify-start items-center text-md">
+                                <FaEnvelope className="mr-2" /> {business.email}
+                            </p>
+                            <p className="mb-4 flex justify-center lg:justify-start items-center text-md">
+                                <FaPhoneAlt className="mr-2" /> {business.mobile} {/* Updated to use mobile */}
+                            </p>
+                            <p className="flex justify-center lg:justify-start items-center text-md">
+                                <FaMapMarkerAlt className="mr-2" /> {business.address}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Review Section */}
+                <div className="w-full mt-12 bg-white p-6" style={{ minHeight: '200px' }}>
+                    <h2 className="text-xl font-semibold mb-4">Reviews ({business.totalReviews})</h2>
+                    <div className="p-4">
+                        {business.totalReviews === 0 ? (
+                            <p className="text-gray-600 text-center">No reviews yet. Be the first to add one!</p>
+                        ) : (
                             <div>
-                                <h3 className="text-lg font-semibold">Opening Hours</h3>
-                                <ul className="mt-2 space-y-2">
-                                    {Object.entries(business.openingHours).map(([day, hours]) => (
-                                        <li key={day} className="flex justify-between">
-                                            <span>{day}:</span>{' '}
-                                            <span>{hours.open} - {hours.close}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                                {/* Reviews will be displayed here */}
                             </div>
                         )}
                     </div>
                 </div>
-            </div>
-
-            {/* Review Section */}
-            <div className="mt-10">
-                <h2 className="text-2xl font-semibold mb-4">Reviews</h2>
-                <ReviewComponent businessId={businessId} userName="Your User Name" /> {/* Pass the user name prop */}
-                {reviews.length > 0 ? (
-                    <ul className="mt-4 space-y-4">
-                        {reviews.map((review) => (
-                            <li key={review._id} className="border p-4 rounded-lg shadow">
-                                <div className="flex justify-between items-center">
-                                    <span className="font-semibold">{review.user.name}</span>
-                                    <span className="text-yellow-500">{review.rating} ★</span>
-                                </div>
-                                <p className="mt-2">{review.comment}</p>
-                                {userReview && userReview._id === review._id && ( // Show edit/delete options for user's own review
-                                    <div className="flex space-x-2 mt-4">
-                                        <button
-                                            onClick={() => handleDeleteReview(review._id)}
-                                            className="text-red-500 hover:underline flex items-center"
-                                        >
-                                            <FaTrash className="mr-1" /> Delete
-                                        </button>
-                                        <button
-                                            // Add your edit logic here, e.g., open a modal with ReviewComponent prefilled
-                                            className="text-blue-500 hover:underline flex items-center"
-                                        >
-                                            <FaEdit className="mr-1" /> Edit
-                                        </button>
-                                    </div>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="mt-4 text-gray-600">No reviews yet.</p>
-                )}
             </div>
         </div>
     );

@@ -15,7 +15,7 @@ import BusinessProfile from '../pages/business/BusinessProfile';
 import BusinessListing from '../pages/business/BusinessListing';
 import UserProfile from '../pages/users/UserProfile'; 
 import './App.css';
-import ReviewPage from '../pages/ReviewPage'; 
+import ReviewPage from '../pages/review/ReviewPage'; 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -38,6 +38,11 @@ const App = () => {
           <Route path="/business/dashboard" element={<BusinessDashboard />} />
           <Route path="/business/profile" element={<BusinessProfile />} />
           <Route path="/business/listing" element={<BusinessListing />} />
+          
+          {/* Business Authentication Routes */}
+          <Route path="/business/verify-otp" element={<VerifyOtp />} />
+          <Route path="/business/forgot-password" element={<ForgotPassword />} />
+          <Route path="/business/reset-password" element={<ResetPassword />} />
 
           {/* Review Route */}
           <Route path="/business/review" element={<ReviewPage />} />
