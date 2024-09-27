@@ -3,6 +3,9 @@ import {
     SUBMIT_REVIEW_REQUEST,
     SUBMIT_REVIEW_SUCCESS,
     SUBMIT_REVIEW_FAILURE,
+    REVIEW_SUBMIT_REQUEST,
+    REVIEW_SUBMIT_SUCCESS,
+    REVIEW_SUBMIT_FAIL,
     FETCH_REVIEWS_REQUEST,
     FETCH_REVIEWS_SUCCESS,
     FETCH_REVIEWS_FAILURE,
@@ -14,31 +17,53 @@ import {
     EDIT_REVIEW_FAILURE,
 } from './types';
 
-// Submit a new review
-export const submitReview = (businessId, formData) => async (dispatch) => {
-    dispatch({ type: SUBMIT_REVIEW_REQUEST });
 
-    try {
-        const response = await axios.post(`/api/businesses/${businessId}/review`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
-        dispatch({ type: SUBMIT_REVIEW_SUCCESS, payload: response.data });
-    } catch (error) {
-        dispatch({
-            type: SUBMIT_REVIEW_FAILURE,
-            payload: error.response ? error.response.data : 'Failed to submit review.',
-        });
-    }
+// Submit Review
+export const submitReview = ({ businessId, reviewData }) => async (dispatch, getState) => {
+  try {
+    dispatch({ type: REVIEW_SUBMIT_REQUEST });
+
+    // Get user token from the Redux state (assuming userLogin contains token)
+    const {
+      userLogin: { userInfo },
+    } = getState();
+
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${userInfo.token}`, // Attach the token for authorization
+      },
+    };
+
+    // Make the POST request to submit the review
+    const { data } = await axios.post(
+      `${process.env.REACT_APP_API_URL}/api/v1/business/${businessId}/reviews`, // Example API endpoint
+      reviewData,
+      config
+    );
+
+    dispatch({
+      type: REVIEW_SUBMIT_SUCCESS,
+      payload: data, // Data returned from the API (usually the new review object)
+    });
+  } catch (error) {
+    dispatch({
+      type: REVIEW_SUBMIT_FAIL,
+      payload:
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message,
+    });
+  }
 };
+
 
 // Fetch reviews for a specific business
 export const fetchReviews = (businessId) => async (dispatch) => {
     dispatch({ type: FETCH_REVIEWS_REQUEST });
 
     try {
-        const response = await axios.get(`/api/businesses/${businessId}/reviews`);
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/businesses/${businessId}/reviews`);
         dispatch({ type: FETCH_REVIEWS_SUCCESS, payload: response.data.reviews });
     } catch (error) {
         dispatch({
@@ -68,7 +93,7 @@ export const editReview = (reviewId, formData) => async (dispatch) => {
     dispatch({ type: EDIT_REVIEW_REQUEST });
 
     try {
-        const response = await axios.put(`/api/reviews/${reviewId}`, formData, {
+        const response = await axios.put(`http://localhost:5000/api/reviews/${reviewId}`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },

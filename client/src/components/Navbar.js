@@ -1,39 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faPlusCircle, faUserPlus, faUserTie, faSignInAlt, faSignOutAlt, faUserCircle, faListAlt, faStar } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faUserPlus, faUserTie, faSignInAlt, faSignOutAlt, faUserCircle, faStar } from '@fortawesome/free-solid-svg-icons';
 import { useDispatch } from 'react-redux';
-import { toast } from 'react-toastify'; // Import toast from react-toastify
+import { toast } from 'react-toastify';
 import { logout } from '../actions/authActions'; // Import your logout action
+import { logoutBusiness } from '../actions/businessAction';
+import Cookies from 'js-cookie'; // Import js-cookie for cookie handling
 
 const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isBusinessDropdownOpen, setIsBusinessDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const dispatch = useDispatch(); // Get the dispatch function
+  const dispatch = useDispatch();
+  const dropdownRef = useRef(null);
+
+  // Check if user or business is logged in
+  const isUserLoggedIn = !!Cookies.get('accessToken'); // Check for user access token
+  const isBusinessLoggedIn = !!Cookies.get('refreshToken'); // Check for business refresh token
 
   const handleSearch = (e) => {
     e.preventDefault();
     navigate(`/business?search=${searchQuery}`);
-  };
+};
 
   const toggleBusinessDropdown = () => {
     setIsBusinessDropdownOpen(!isBusinessDropdownOpen);
   };
 
   const handleLogout = () => {
-    // Dispatch logout action
     dispatch(logout());
-
-    // Show toast notification
     toast.success('You have logged out successfully!');
-
-    // Delay navigation to allow the toast to display
     setTimeout(() => {
-      navigate('/'); // Redirect to login page or home page
-    }, 2000); // Delay for 2 seconds
+      navigate('/'); // Redirect after logout
+    }, 2000);
   };
+
+  const handleBusinessLogout = () => {
+    dispatch(logoutBusiness());
+    toast.success('Business logged out successfully!');
+    setTimeout(() => {
+      navigate('/'); // Redirect after logout
+    }, 2000);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsBusinessDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownRef]);
 
   return (
     <nav className="bg-gray-900 w-full z-50 p-4 shadow-lg">
@@ -67,38 +91,44 @@ const Navbar = () => {
         {/* Navigation Links */}
         <ul className="flex items-center space-x-8">
           {/* User Links */}
-          <li>
-            <Link
-              to="/login"
-              className={`text-white hover:text-blue-400 transition duration-300 ${location.pathname === '/login' ? 'font-bold' : ''}`}
-            >
-              <FontAwesomeIcon icon={faSignInAlt} className="mr-2" />
-              Login
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/register"
-              className={`text-white hover:text-blue-400 transition duration-300 ${location.pathname === '/register' ? 'font-bold' : ''}`}
-            >
-              <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
-              Register
-            </Link>
-          </li>
+          {!isUserLoggedIn && !isBusinessLoggedIn && (
+            <>
+              <li>
+                <Link
+                  to="/login"
+                  className={`text-white hover:text-blue-400 transition duration-300 ${location.pathname === '/login' ? 'font-bold' : ''}`}
+                >
+                  <FontAwesomeIcon icon={faSignInAlt} className="mr-2" />
+                  Login
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/register"
+                  className={`text-white hover:text-blue-400 transition duration-300 ${location.pathname === '/register' ? 'font-bold' : ''}`}
+                >
+                  <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
+                  Register
+                </Link>
+              </li>
+            </>
+          )}
 
           {/* User Profile Link */}
-          <li>
-            <Link
-              to="/profile"
-              className={`text-white hover:text-blue-400 transition duration-300 ${location.pathname === '/profile' ? 'font-bold' : ''}`}
-            >
-              <FontAwesomeIcon icon={faUserCircle} className="mr-2" />
-              Profile
-            </Link>
-          </li>
+          {isUserLoggedIn && (
+            <li>
+              <Link
+                to="/profile"
+                className={`text-white hover:text-blue-400 transition duration-300 ${location.pathname === '/profile' ? 'font-bold' : ''}`}
+              >
+                <FontAwesomeIcon icon={faUserCircle} className="mr-2" />
+                Profile
+              </Link>
+            </li>
+          )}
 
           {/* Business Dropdown */}
-          <li className="relative">
+          <li className="relative" ref={dropdownRef}>
             <button
               onClick={toggleBusinessDropdown}
               className={`text-white hover:text-blue-400 transition duration-300 flex items-center ${isBusinessDropdownOpen ? 'font-bold' : ''}`}
@@ -121,113 +151,95 @@ const Navbar = () => {
             </button>
             {isBusinessDropdownOpen && (
               <ul className="absolute bg-white text-gray-800 right-0 mt-2 shadow-lg rounded-lg overflow-hidden w-48">
-                <li>
-                  <Link
-                    to="/business/register"
-                    className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
-                    onClick={() => setIsBusinessDropdownOpen(false)}
-                  >
-                    <FontAwesomeIcon icon={faUserPlus} />
-                    <span>Register Business</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/business/login"
-                    className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
-                    onClick={() => setIsBusinessDropdownOpen(false)}
-                  >
-                    <FontAwesomeIcon icon={faSignInAlt} />
-                    <span>Login to Business</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/business/verify-otp"
-                    className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
-                    onClick={() => setIsBusinessDropdownOpen(false)}
-                  >
-                    <FontAwesomeIcon icon={faUserTie} aria-hidden="true" />
-                    <span>Verify OTP</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/business/forgot-password"
-                    className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
-                    onClick={() => setIsBusinessDropdownOpen(false)}
-                  >
-                    <FontAwesomeIcon icon={faUserCircle} />
-                    <span>Forgot Password</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/business/reset-password"
-                    className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
-                    onClick={() => setIsBusinessDropdownOpen(false)}
-                  >
-                    <FontAwesomeIcon icon={faUserCircle} />
-                    <span>Reset Password</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/business/dashboard"
-                    className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
-                    onClick={() => setIsBusinessDropdownOpen(false)}
-                  >
-                    <FontAwesomeIcon icon={faUserTie} aria-hidden="true" />
-                    <span>Business Dashboard</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/business/profile"
-                    className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
-                    onClick={() => setIsBusinessDropdownOpen(false)}
-                  >
-                    <FontAwesomeIcon icon={faUserCircle} />
-                    <span>Business Profile</span>
-                  </Link>
-                </li>
+                {!isBusinessLoggedIn && (
+                  <>
+                    <li>
+                      <Link
+                        to="/business/register"
+                        className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                        onClick={() => setIsBusinessDropdownOpen(false)}
+                      >
+                        <FontAwesomeIcon icon={faUserPlus} />
+                        <span>Register Business</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/business/login"
+                        className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                        onClick={() => setIsBusinessDropdownOpen(false)}
+                      >
+                        <FontAwesomeIcon icon={faSignInAlt} />
+                        <span>Login to Business</span>
+                      </Link>
+                    </li>
+                  </>
+                )}
+                {isBusinessLoggedIn && (
+                  <>
+                    <li>
+                      <Link
+                        to="/business/dashboard"
+                        className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                        onClick={() => setIsBusinessDropdownOpen(false)}
+                      >
+                        <FontAwesomeIcon icon={faUserTie} aria-hidden="true" />
+                        <span>Business Dashboard</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/business/profile"
+                        className="block px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                        onClick={() => setIsBusinessDropdownOpen(false)}
+                      >
+                        <FontAwesomeIcon icon={faUserCircle} />
+                        <span>Business Profile</span>
+                      </Link>
+                    </li>
+                    {/* Logout for Business */}
+                    <li>
+                      <button
+                        onClick={handleBusinessLogout} // Connect logout function
+                        className="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                      >
+                        <FontAwesomeIcon icon={faSignOutAlt} className="text-red-500" />
+                        <span className="text-red-500">Logout</span>
+                      </button>
+                    </li>
+                  </>
+                )}
               </ul>
             )}
           </li>
 
-          {/* Business Listing Link */}
-          <li>
-            <Link
-              to="/business/listing"
-              className={`text-white hover:text-blue-400 transition duration-300 flex items-center space-x-2 ${location.pathname === '/business/listing' ? 'font-bold' : ''}`}
-            >
-              <FontAwesomeIcon icon={faListAlt} />
-              <span>Business Listing</span>
-            </Link>
-          </li>
-
-          {/* Add Review Link */}
-          <li>
-            <Link
-              to="/business/review"
-              className={`text-white hover:text-blue-400 transition duration-300 flex items-center space-x-2 ${location.pathname === '/business/review' ? 'font-bold' : ''}`}
-            >
-              <FontAwesomeIcon icon={faStar} />
-              <span>Add Review</span>
-            </Link>
-          </li>
+          {/* Add Review Link - Only show if a user is logged in */}
+          {isUserLoggedIn && (
+            <li>
+              <Link
+                to="/business/review"
+                className={`text-white hover:text-blue-400 transition duration-300 flex items-center space-x-2 ${location.pathname === '/business/review' ? 'font-bold' : ''}`}
+              >
+                <FontAwesomeIcon icon={faStar} />
+                <span>Add Review</span>
+              </Link>
+            </li>
+          )}
 
           {/* Logout Link */}
-          <li>
-            <button
-              onClick={handleLogout} // Connect logout function
-              className="text-white hover:text-red-500 transition duration-300"
-            >
-              <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
-              Logout
-            </button>
-          </li>
+          {isUserLoggedIn && (
+            <li>
+              <button
+                onClick={handleLogout}
+                className="text-white hover:text-blue-400 transition duration-300 flex items-center"
+              >
+                <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
+                Logout
+              </button>
+            </li>
+          )}
         </ul>
+
       </div>
     </nav>
   );

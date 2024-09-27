@@ -1,22 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const {addReview, addReply, getAllReviews, deleteReview, editReview} = require('../controllers/reviewController');
-const upload = require('../middleware/multer'); // Ensure you have multer configured
-const {protect} = require('../middlewares/reviewMiddleware')
+const {submitReview, uploadReviewPhotos} = require('../controllers/reviewController');
+const upload = require('../config/multerConfig'); // Ensure you have multer configured
+const {protectReview} = require('../middlewares/reviewMiddleware')
 
-// Add review with image upload
-router.post('/:id/reviews', protect , upload.array('images', 5), addReview);
+// POST route to submit a review
+router.post('/business/:businessId/reviews', protectReview, submitReview);
 
-// Reply to a review with image upload
-router.post('/:businessId/reviews/:reviewId/reply', protect, upload.array('images', 5), addReply);
+// Route to submit a review with photos
+router.post('/upload-photos/:businessId', protectReview, upload.array('images', 10), uploadReviewPhotos); // Max 10 images
 
-// Get All Reviews 
-router.get('/:id/reviews', getAllReviews); // Get all reviews for a business
-
-// Delete a review
-router.delete('/:businessId/reviews/:reviewId', protect, deleteReview); 
-
-// Edit a review
-router.put('/:businessId/reviews/:reviewId', protect, editReview); 
 
 module.exports = router;

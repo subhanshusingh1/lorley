@@ -1,55 +1,93 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { fetchBusinessByIdApi, createOrUpdateBusiness } from '../../utils/api';
+import { fetchBusinessById, updateBusinessDetails } from '../../actions/businessAction';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const BusinessDashboard = ({ businessId }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState(''); // optional for updates
+  const [password, setPassword] = useState('');
   const [businessType, setBusinessType] = useState('service');
   const [contactInfo, setContactInfo] = useState('');
   const [logo, setLogo] = useState(null);
   const [photos, setPhotos] = useState([]);
+  const [logoPreview, setLogoPreview] = useState('');
+  const [photoPreviews, setPhotoPreviews] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [category, setCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [openingHours, setOpeningHours] = useState({
-    monday: { open: '', close: '', closed: false },
-    tuesday: { open: '', close: '', closed: false },
-    wednesday: { open: '', close: '', closed: false },
-    thursday: { open: '', close: '', closed: false },
-    friday: { open: '', close: '', closed: false },
-    saturday: { open: '', close: '', closed: false },
-    sunday: { open: '', close: '', closed: false },
+    monday: { open: { type: '', required: true }, close: { type: '', required: true }, closed: false },
+    tuesday: { open: { type: '', required: true }, close: { type: '', required: true }, closed: false },
+    wednesday: { open: { type: '', required: true }, close: { type: '', required: true }, closed: false },
+    thursday: { open: { type: '', required: true }, close: { type: '', required: true }, closed: false },
+    friday: { open: { type: '', required: true }, close: { type: '', required: true }, closed: false },
+    saturday: { open: { type: '', required: true }, close: { type: '', required: true }, closed: false },
+    sunday: { open: { type: '', required: true }, close: { type: '', required: true }, closed: false },
   });
-  const [address, setAddress] = useState('');
-  const [description, setDescription] = useState(''); // Added description state
+  const [address, setAddress] = useState({
+    houseFlatBlockNo: '',
+    areaStreetVillage: '',
+    landmark: '',
+    pincode: '',
+    city: '',
+    state: '',
+  });
+  const [description, setDescription] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
 
   const dispatch = useDispatch();
+
+  // Function to fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/categories`);
+        setCategories(res.data.categories); // Set categories from the response
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        setError('Failed to fetch categories.');
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Function to handle category selection
+  const handleCategoryChange = (event) => {
+    setSelectedCategory(event.target.value);
+  };
+
+  // Use useEffect to fetch categories on component mount
+  // useEffect(() => {
+  //   fetchCategories();
+  // }, []);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (businessId) {
-          const businessData = await fetchBusinessByIdApi(businessId);
+          const businessData = await dispatch(fetchBusinessById(businessId));
           setName(businessData.name);
           setEmail(businessData.email);
           setBusinessType(businessData.businessType);
           setContactInfo(businessData.contactInfo);
           setLogo(businessData.logo);
-          setPhotos(businessData.photos);
-          setOpeningHours(businessData.openingHours);
-          setAddress(businessData.address);
-          setDescription(businessData.description); // Set description if exists
+          setPhotos(businessData.photos || []);
+          setOpeningHours(businessData.openingHours || openingHours);
+          setAddress(businessData.address || address);
+          setDescription(businessData.description);
         }
       } catch (err) {
-        setError('Failed to load data');
+        setError('Failed to load business data');
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [businessId]);
+  }, [businessId, dispatch]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -68,31 +106,68 @@ const BusinessDashboard = ({ businessId }) => {
     if (logo) {
       formData.append('logo', logo);
     }
-    photos.forEach((photo, index) => formData.append(`photos[${index}]`, photo));
+    photos.forEach((photo) => formData.append('photos', photo));
     formData.append('openingHours', JSON.stringify(openingHours));
-    formData.append('address', address);
-    formData.append('description', description); // Append description to form data
+    formData.append('address', JSON.stringify(address)); // Ensure address is a string
+    formData.append('description', description);
+    formData.append('category', selectedCategory); // Include selected category
 
     try {
-      await createOrUpdateBusiness(formData, businessId);
+      await dispatch(updateBusinessDetails(formData, businessId));
       setSuccessMessage(`Business ${businessId ? 'updated' : 'created'} successfully!`);
     } catch (err) {
-      setError('Failed to submit data');
+      setError('Failed to submit data. Please check your input and try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const timeOptions = Array.from({ length: 24 }, (_, i) => {
-    const hour = i % 12 === 0 ? 12 : i % 12;
-    const period = i < 12 ? 'AM' : 'PM';
-    return `${hour}:00 ${period}`;
-  });
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    setLogo(file);
+    setLogoPreview(URL.createObjectURL(file));
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'your_upload_preset');
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/v1/business/upload-profile-image', formData);
+      const logoUrl = response.data.secure_url;
+      console.log('Logo uploaded:', logoUrl);
+      toast.success('Logo uploaded successfully!');
+    } catch (err) {
+      toast.error('Failed to upload logo');
+    }
+  };
+
+  const handlePhotosUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    setPhotos(files);
+
+    const photoUrls = [];
+    const uploadPromises = files.map(async (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'your_upload_preset');
+
+      try {
+        const response = await axios.post('http://localhost:5000/api/v1/users/upload-photos', formData);
+        photoUrls.push(response.data.secure_url);
+        toast.success(`${file.name} uploaded successfully!`);
+      } catch (err) {
+        toast.error(`Failed to upload ${file.name}`);
+      }
+    });
+
+    await Promise.all(uploadPromises);
+    setPhotoPreviews(photoUrls);
+  };
 
   const handleOpeningHoursChange = (day, timeType, value) => {
     setOpeningHours((prev) => ({
       ...prev,
-      [day]: { ...prev[day], [timeType]: value },
+      [day]: { ...prev[day], [timeType]: { type: value, required: true } },
     }));
   };
 
@@ -104,153 +179,193 @@ const BusinessDashboard = ({ businessId }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 py-8 mb-4">
-      <div className="bg-white shadow-xl rounded-lg p-6 w-full max-w-xl">
-        <h2 className="text-2xl font-bold mb-6 text-center text-blue-600">{businessId ? 'Update' : 'Add Business Details'}</h2>
+    <div className="min-h-screen flex justify-center items-center bg-gray-100 py-8 mb-5">
+      <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-6xl">
+        <h2 className="text-2xl font-bold mb-6 text-center text-blue-600">
+          {businessId ? 'Update Business Details' : 'Add Business Details'}
+        </h2>
 
         {loading ? (
-          <p>Loading...</p>
+          <p className="text-center text-gray-600">Loading...</p>
         ) : (
-          <form onSubmit={handleSubmit}>
-            {error && <p className="text-red-500">{error}</p>}
-            {successMessage && <p className="text-green-500">{successMessage}</p>}
-
-            {/* Business Logo */}
-            <div className="mb-4 flex items-center">
-              {logo && (
-                <img src={URL.createObjectURL(logo)} alt="Business Logo" className="h-20 rounded-full mr-4" />
-              )}
-              <div className="flex-grow">
-                <label className="block text-lg font-bold text-gray-700 mb-2">Business Logo:</label>
-                <input type="file" onChange={(e) => setLogo(e.target.files[0])} className="border rounded p-2" />
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Left Section (Larger) */}
+            <div className="md:col-span-2 space-y-4">
+              <div>
+                <label className="block text-lg font-bold text-gray-700 mb-2">Business Name:</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
+
+              <div>
+                <label className="block text-lg font-bold text-gray-700 mb-2">Business Description:</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows="5"
+                />
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow-md mt-4">
+                <h2 className="text-2xl font-semibold mb-4">Business Address</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-medium">House/Flat/Block No:</label>
+                    <input
+                      type="text"
+                      value={address.houseFlatBlockNo}
+                      onChange={(e) => setAddress({ ...address, houseFlatBlockNo: e.target.value })}
+                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-medium">Area/Street/Village:</label>
+                    <input
+                      type="text"
+                      value={address.areaStreetVillage}
+                      onChange={(e) => setAddress({ ...address, areaStreetVillage: e.target.value })}
+                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="block font-medium">Landmark:</label>
+                    <input
+                      type="text"
+                      value={address.landmark}
+                      onChange={(e) => setAddress({ ...address, landmark: e.target.value })}
+                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-medium">Pincode:</label>
+                    <input
+                      type="text"
+                      value={address.pincode}
+                      onChange={(e) => setAddress({ ...address, pincode: e.target.value })}
+                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="block font-medium">City:</label>
+                    <input
+                      type="text"
+                      value={address.city}
+                      onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-medium">State:</label>
+                    <input
+                      type="text"
+                      value={address.state}
+                      onChange={(e) => setAddress({ ...address, state: e.target.value })}
+                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Category Selection */}
+              <div>
+                {error && <div className="text-red-600 mb-4">{error}</div>}
+                <div className="mb-4">
+                  <label className="block text-gray-700 text-sm font-semibold mb-2">Category</label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="shadow-sm border border-gray-300 rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Category</option>
+                    {categories.length > 0 ? (
+                      categories.map(cat => (
+                        <option key={cat._id} value={cat.name}>{cat.name}</option>
+                      ))
+                    ) : (
+                      <option value="">No categories available</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+              {/* Opening Hours */}
+              <div className="mt-4">
+                <h2 className="text-lg font-bold">Opening Hours:</h2>
+                {Object.keys(openingHours).map((day) => (
+                  <div key={day} className="flex items-center justify-between mt-2">
+                    <span>{day.charAt(0).toUpperCase() + day.slice(1)}:</span>
+                    <div>
+                      <input
+                        type="time"
+                        value={openingHours[day].open.type}
+                        onChange={(e) => handleOpeningHoursChange(day, 'open', e.target.value)}
+                        disabled={openingHours[day].closed}
+                        className="border border-gray-300 rounded p-1"
+                      />
+                      <span className="mx-2">to</span>
+                      <input
+                        type="time"
+                        value={openingHours[day].close.type}
+                        onChange={(e) => handleOpeningHoursChange(day, 'close', e.target.value)}
+                        disabled={openingHours[day].closed}
+                        className="border border-gray-300 rounded p-1"
+                      />
+                      <label className="ml-2">
+                        <input
+                          type="checkbox"
+                          checked={openingHours[day].closed}
+                          onChange={() => handleClosedChange(day)}
+                        />
+                        Closed
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Logo Upload */}
+              <div className="mt-4">
+                <label className="block text-lg font-bold text-gray-700 mb-2">Upload Logo:</label>
+                <input type="file" accept="image/*" onChange={handleLogoUpload} className="w-full mb-2" />
+                {logoPreview && <img src={logoPreview} alt="Logo Preview" className="h-24 w-24 object-cover rounded" />}
+              </div>
+
+              {/* Photos Upload */}
+              <div className="mt-4">
+                <label className="block text-lg font-bold text-gray-700 mb-2">Upload Photos:</label>
+                <input type="file" accept="image/*" multiple onChange={handlePhotosUpload} className="w-full mb-2" />
+                <div className="grid grid-cols-3 gap-2">
+                  {photoPreviews.map((preview, index) => (
+                    <img key={index} src={preview} alt={`Photo Preview ${index}`} className="h-24 w-24 object-cover rounded" />
+                  ))}
+                </div>
+              </div>
+
+              {error && <p className="text-red-500">{error}</p>}
+              {successMessage && <p className="text-green-500">{successMessage}</p>}
             </div>
 
-            {/* Business Name */}
-            <label className="block text-lg font-bold text-gray-700 mb-2">Business Name:</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="mb-4 p-2 border border-gray-300 rounded w-full"
-            />
-
-            {/* Email */}
-            <label className="block text-lg font-bold text-gray-700 mb-2">Email:</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="mb-4 p-2 border border-gray-300 rounded w-full"
-            />
-
-            {/* Password (optional) */}
-            <label className="block text-lg font-bold text-gray-700 mb-2">Password (Optional):</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mb-4 p-2 border border-gray-300 rounded w-full"
-            />
-
-            {/* Business Type */}
-            <label className="block text-lg font-bold text-gray-700 mb-2">Business Type:</label>
-            <select
-              value={businessType}
-              onChange={(e) => setBusinessType(e.target.value)}
-              required
-              className="mb-4 p-2 border border-gray-300 rounded w-full"
-            >
-              <option value="service">Service</option>
-              <option value="product">Product</option>
-            </select>
-
-            {/* Contact Info */}
-            <label className="block text-lg font-bold text-gray-700 mb-2">Contact Info:</label>
-            <input
-              type="text"
-              value={contactInfo}
-              onChange={(e) => setContactInfo(e.target.value)}
-              required
-              className="mb-4 p-2 border border-gray-300 rounded w-full"
-            />
-
-            {/* Add Photos */}
-            <label className="block text-lg font-bold text-gray-700 mb-2">Add Photos:</label>
-            <input type="file" multiple onChange={(e) => setPhotos(Array.from(e.target.files))} className="mb-4" />
-
-            {/* Opening Hours */}
-            <label className="block text-lg font-bold text-gray-700 mb-2">Opening Hours:</label>
-            {Object.keys(openingHours).map((day) => (
-              <div key={day} className="mb-4">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={openingHours[day].closed}
-                    onChange={() => handleClosedChange(day)}
-                    className="mr-2"
-                  />
-                  Closed on {day.charAt(0).toUpperCase() + day.slice(1)}
-                </label>
-                {!openingHours[day].closed && (
-                  <div className="flex space-x-2">
-                    <select
-                      value={openingHours[day].open}
-                      onChange={(e) => handleOpeningHoursChange(day, 'open', e.target.value)}
-                      className="p-2 border border-gray-300 rounded w-full"
-                    >
-                      <option value="">Open Time</option>
-                      {timeOptions.map((time) => (
-                        <option key={time} value={time}>
-                          {time}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={openingHours[day].close}
-                      onChange={(e) => handleOpeningHoursChange(day, 'close', e.target.value)}
-                      className="p-2 border border-gray-300 rounded w-full"
-                    >
-                      <option value="">Close Time</option>
-                      {timeOptions.map((time) => (
-                        <option key={time} value={time}>
-                          {time}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Address */}
-            <label className="block text-lg font-bold text-gray-700 mb-2">Address:</label>
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              required
-              className="mb-4 p-2 border border-gray-300 rounded w-full"
-            />
-
-            {/* Description (new field) */}
-            <label className="block text-lg font-bold text-gray-700 mb-2">Description:</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-              className="mb-4 p-2 border border-gray-300 rounded w-full"
-              placeholder="Add a brief description of the business"
-            />
-
-            <button
-              type="submit"
-              className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 w-full mt-4"
-            >
-              {businessId ? 'Update Business Details' : 'Add Business Details'}
-            </button>
+            {/* Submit Button Section */}
+            <div className="md:col-span-1 flex justify-center items-end">
+              <button
+                type="submit"
+                disabled={loading}
+                className={`bg-blue-600 text-white py-2 px-4 rounded ${loading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+              >
+                {loading ? 'Submitting...' : 'Save Business'}
+              </button>
+            </div>
           </form>
         )}
       </div>

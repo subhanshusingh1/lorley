@@ -8,8 +8,8 @@ const BusinessRegister = () => {
     const [businessName, setBusinessName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [businessType, setBusinessType] = useState('');  
-    const [mobile, setmobile] = useState(''); 
+    const [businessType, setBusinessType] = useState('');
+    const [mobile, setmobile] = useState('');
     const [category, setCategory] = useState('');
     const [categories, setCategories] = useState([]);
     const [error, setError] = useState('');
@@ -20,7 +20,9 @@ const BusinessRegister = () => {
         const fetchCategories = async () => {
             try {
                 const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/categories`);
-                setCategories(res.data.categories);
+                // Assuming the categories array is structured correctly in the response
+                setCategories(res.data.categories); // Set categories from the response
+                console.log(res);
             } catch (error) {
                 console.error("Error fetching categories:", error);
                 setError('Failed to fetch categories.');
@@ -28,6 +30,7 @@ const BusinessRegister = () => {
         };
         fetchCategories();
     }, []);
+
 
     const { loading, error: registerError } = useSelector(state => state.business.businessRegister);
 
@@ -48,7 +51,7 @@ const BusinessRegister = () => {
             setError('Please enter a valid 10-digit contact number.');
             return;
         }
-        
+
         setError('');
         dispatch(registerBusiness({ businessName, email, password, businessType, mobile, category }))
             .then(() => navigate('/business/login'));
@@ -129,10 +132,11 @@ const BusinessRegister = () => {
                     >
                         <option value="">Select Category</option>
                         {categories.map(cat => (
-                            <option key={cat._id} value={cat._id}>{cat.name}</option>
+                            <option key={cat._id} value={cat.name}>{cat.name}</option>
                         ))}
                     </select>
                 </div>
+
 
                 <button
                     onClick={registerHandler}

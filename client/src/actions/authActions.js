@@ -1,5 +1,6 @@
 import axios from 'axios';
 import Cookies from 'js-cookie'; 
+
 import {
   REGISTER_REQUEST,
   REGISTER_SUCCESS,
@@ -34,6 +35,9 @@ import {
   // FETCH_PROFILE_SUCCESS,
   // FETCH_PROFILE_FAIL,
 } from './types';
+
+import { setAccessToken, setRefreshToken } from '../utils/tokenUtils';
+import axiosInstance from '../pages/users/axiosInstance'; 
 
 // Register a User
 export const registerUser = ({ name, email, password }) => async (dispatch) => {
@@ -115,65 +119,78 @@ export const sendOtp = (email) => async (dispatch) => {
   }
 };
 
-
-// verify OTP
+// Verify Otp
 export const verifyOtp = (email, otp) => async (dispatch) => {
   try {
-    dispatch({ type: OTP_REQUEST }); // Dispatch OTP request action
+    dispatch({ type: OTP_REQUEST });
 
-    // Sending OTP verification request to the backend
-    const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/users/verify-otp`, { email, otp });
+    const res = await axios.post(
+      `${process.env.REACT_APP_API_URL}/api/v1/users/verify-otp`,
+      { email, otp },
+      { withCredentials: true } // Include withCredentials here
+    );
 
     if (res.data.success) {
       dispatch({
-        type: OTP_VERIFIED_SUCCESS, // Dispatch OTP verified success action
+        type: OTP_VERIFIED_SUCCESS,
         payload: res.data.message,
       });
 
-      // Return success response
+      // Save access and refresh tokens
+      setAccessToken(res.data.accessToken);
+      setRefreshToken(res.data.refreshToken);
+
       return { success: true, message: res.data.message };
     } else {
       dispatch({
-        type: OTP_VERIFIED_FAILED, // Dispatch OTP verified failed action
+        type: OTP_VERIFIED_FAILED,
         payload: res.data.message || 'OTP verification failed.',
       });
 
-      // Return failure response
       return { success: false, message: res.data.message || 'OTP verification failed.' };
     }
   } catch (error) {
-    // Handle errors during OTP verification
     const errorMessage = error.response?.data?.message || 'An error occurred during OTP verification.';
     dispatch({
-      type: OTP_VERIFIED_FAILED, // Dispatch OTP verified failed action
+      type: OTP_VERIFIED_FAILED,
       payload: errorMessage,
     });
 
-    // Return failure response with error message
     return { success: false, message: errorMessage };
   }
 };
 
 
-// login User
+
+// login
+// login
 export const loginUser = (email, password) => async (dispatch) => {
   try {
     dispatch({ type: LOGIN_REQUEST });
     console.log("Dispatching login request for:", { email, password });
 
-    const res = await axios.post('http://localhost:5000/api/v1/users/login', { email, password }, {withCredentials: true});
+    // Login request
+    const res = await axios.post(
+      `${process.env.REACT_APP_API_URL}/api/v1/users/login`,
+      { email, password },
+      { withCredentials: true } // Include withCredentials here
+    );
 
     console.log("Login response:", res.data); // Log the full response for debugging
 
     if (res.data.success) {
-      // Adjust destructuring to match your API response
-      const user = res.data.data.user; // Access the user object from the data
+      // Extracting tokens and user
+      const { accessToken, refreshToken, user } = res.data.data; // Adjust according to your API response structure
 
       console.log("Login successful! User:", user); // Log user
 
+      // Save access and refresh tokens using utility functions
+      setAccessToken(accessToken); // Utility to set the access token
+      setRefreshToken(refreshToken); // Utility to set the refresh token
+
       dispatch({
         type: LOGIN_SUCCESS,
-        payload: { user }, // No token needed in payload since it's in the cookie
+        payload: { user }, // You can also store tokens if needed
       });
       return { success: true };
     } else {
@@ -196,16 +213,15 @@ export const loginUser = (email, password) => async (dispatch) => {
 };
 
 
-
-// Logout action
+// Logout 
 export const logout = () => (dispatch) => {
-  // Remove token from cookies
-  Cookies.remove('jwt'); 
-  
-  // Dispatch logout action
-  dispatch({ type: LOGOUT });
+    // Remove access and refresh tokens from cookies
+    Cookies.remove('jwt'); // Remove the access token
+    Cookies.remove('refreshToken'); // Remove the refresh token, adjust the key as needed
+    
+    // Dispatch logout action
+    dispatch({ type: LOGOUT });
 };
-
 
 // Forgot Password
 export const forgotPassword = (email) => async (dispatch) => {
@@ -213,7 +229,7 @@ export const forgotPassword = (email) => async (dispatch) => {
     dispatch({ type: USER_FORGOT_PASSWORD_REQUEST });
     const config = { headers: { 'Content-Type': 'application/json' } };
 
-    await axios.post('http://localhost:5000/api/v1/users/forgot-password', { email }, config);
+    await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/users/forgot-password`, { email }, config);
 
     dispatch({ type: USER_FORGOT_PASSWORD_SUCCESS });
 
@@ -235,7 +251,7 @@ export const resetPassword = (email, newPassword) => async (dispatch) => {
     const config = { headers: { 'Content-Type': 'application/json' } };
 
     // No OTP in the payload anymore
-    await axios.post('http://localhost:5000/api/v1/users/reset-password', { email, newPassword }, config);
+    await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/users/reset-password`, { email, newPassword }, config);
 
     dispatch({ type: USER_RESET_PASSWORD_SUCCESS });
 
@@ -257,7 +273,7 @@ export const fetchUserProfile = (userId) => async (dispatch) => {
     dispatch({ type: FETCH_PROFILE_REQUEST });
 
     // Ensure the URL is correct and the userId is valid
-    const response = await axios.get(`http://localhost:5000/api/v1/users/profile/${userId}`, { withCredentials: true });
+    const response = await axios.get(`${process.env.REACT_APP_API_URL}api/v1/users/profile/${userId}`, { withCredentials: true });
     console.log("Profile response:", response.data); // Log the response data
     
     const { data } = response;
@@ -284,7 +300,7 @@ export const fetchUserProfile = (userId) => async (dispatch) => {
 export const updateUserProfile = (userData) => async (dispatch) => {
   try {
     dispatch({ type: UPDATE_PROFILE_REQUEST }); // Dispatch loading state
-    const response = await axios.put('http://localhost:5000/api/v1/users/update-profile', userData, {
+    const response = await axios.put(`${process.env.REACT_APP_API_URL}/api/v1/users/update-profile`, userData, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${userData.token}` // Include the token if necessary
@@ -316,7 +332,7 @@ export const deleteUserAccount = (userId, password) => async (dispatch) => {
       throw new Error('Token not found in cookies.');
     }
 
-    await axios.delete(`http://localhost:5000/api/v1/users/profile/${userId}`, {
+    await axios.delete(`${process.env.REACT_APP_API_URL}/api/v1/users/profile/${userId}`, {
       headers: {
         'Authorization': `Bearer ${token}`, // Send token in header
         'Content-Type': 'application/json',
@@ -335,6 +351,33 @@ export const deleteUserAccount = (userId, password) => async (dispatch) => {
     return { success: false, message: error.response?.data?.message || error.message };
   }
 };
+
+// get refresh token from backend
+export const refreshAccessToken = () => async (dispatch) => {
+  try {
+    const res = await axiosInstance.post(`${process.env.REACT_APP_API_URL}/api/v1/users/refresh-token`);
+
+    if (res.data.success) {
+      // Store the new access token if needed
+      return {
+        success: true,
+        accessToken: res.data.accessToken,
+      };
+    } else {
+      // Handle refresh token failure (e.g., log the user out)
+      return {
+        success: false,
+      };
+    }
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || 'Failed to refresh token.';
+    return {
+      success: false,
+      message: errorMessage,
+    };
+  }
+};
+
 
 
 

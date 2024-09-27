@@ -3,9 +3,20 @@ const {
     addBusiness, 
     sendOtp, 
     verifyOtp, 
-    login
+    login,
+    forgotPassword,
+    resetPassword,
+    fetchBusinessById,
+    refreshBusinessToken,
+    updateBusinessDetails,
+    uploadBusinessLogo,
+    uploadBusinessPhotos,
+    fetchAllBusinesses
 } = require('../controllers/businessController'); // Ensure these controllers are defined
 const multer = require('multer');
+
+// protect middleware
+const {protectBusiness} = require('../middlewares/businessMiddleware');
 
 // Multer setup for file uploads if you plan to use it, can be removed if not needed
 const upload = multer({ dest: 'uploads/' });
@@ -13,7 +24,7 @@ const upload = multer({ dest: 'uploads/' });
 const router = express.Router();
 
 // Route to register/add a new business
-router.post('/', addBusiness); // Assuming this will register a business
+router.post('/', addBusiness);
 
 // Route for businesses to log in
 router.post('/login', login);
@@ -29,5 +40,23 @@ router.post('/forgot-password', forgotPassword);
 
 // Route for Reset Password
 router.post('/reset-password', resetPassword);
+
+// Route to fetch Business Details
+router.get('/:id', protectBusiness, fetchBusinessById);
+
+// Generate Refresh Token
+router.post('/refresh-token', refreshBusinessToken)
+
+// Update Business Route
+router.put('/business/:id', protectBusiness, updateBusinessDetails);
+
+// Single file upload for logo
+router.post('/upload-logo', protectBusiness, upload.single('file'), uploadBusinessLogo);
+
+// Multiple file upload for photos
+router.post('/upload-photos', protectBusiness, upload.array('files', 10), uploadBusinessPhotos); // Limiting to 10 files at once
+
+// Define the route to fetch all businesses
+router.get('/business', fetchAllBusinesses);
 
 module.exports = router;

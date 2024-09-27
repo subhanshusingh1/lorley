@@ -1,65 +1,98 @@
 import React, { useState, useEffect } from 'react';
 import { FaStar } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom'; // For navigation
-import { submitReview } from '../../actions/reviewActions';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios'; // Import axios for API calls
+import { submitReview } from '../../actions/reviewActions'; // Redux action
 
 const Review = ({ businessId, businessName, userName }) => {
     const dispatch = useDispatch();
-    const navigate = useNavigate(); // For redirecting after submission
+    const navigate = useNavigate();
     const { success, error } = useSelector((state) => state.review);
 
     const [rating, setRating] = useState(0);
-    const [hover, setHover] = useState(0); // For half-star hover effect
+    const [hover, setHover] = useState(0);
     const [description, setDescription] = useState('');
-    const [images, setImages] = useState([]);
+    const [images, setImages] = useState([]); // Actual image files
+    const [imagePreviews, setImagePreviews] = useState([]); // Image preview URLs
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
 
+    // Handle image selection and preview generation
     const handleImageChange = (e) => {
         const files = Array.from(e.target.files);
         setImages(files);
+
+        // Generate preview URLs
+        const filePreviews = files.map((file) => URL.createObjectURL(file));
+        setImagePreviews(filePreviews);
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const formData = new FormData();
-        formData.append('rating', rating);
-        formData.append('comment', description);
-        images.forEach((image) => {
-            formData.append('images', image);
+    // Upload images to Cloudinary
+    const handleImageUpload = async () => {
+        const imageUploadPromises = images.map(async (image) => {
+            const formData = new FormData();
+            formData.append('file', image);
+            formData.append('upload_preset', 'your_upload_preset'); // Replace with your Cloudinary upload preset
+
+            try {
+                const response = await axios.post('http://localhost:5000/api/v1/review/upload-photos/:id', formData);
+                return response.data.secure_url; // Cloudinary URL for the uploaded image
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                return null;
+            }
         });
 
-        // Dispatch the submitReview action
-        dispatch(submitReview({ businessId, formData }));
+        const urls = await Promise.all(imageUploadPromises);
+        return urls.filter((url) => url !== null); // Filter out any failed uploads
     };
 
-    // Update success and error messages based on Redux state
+    // Handle form submission
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        // Upload images to Cloudinary first
+        const uploadedImageUrls = await handleImageUpload();
+
+        // Prepare formData for review submission
+        const reviewData = {
+            rating,
+            comment: description,
+            images: uploadedImageUrls, // Attach image URLs to the review
+        };
+
+        // Dispatch the review submission action with the businessId and reviewData
+        dispatch(submitReview({ businessId, reviewData }));
+    };
+
+    // Handle review success/error state
     useEffect(() => {
         if (success) {
             setSuccessMessage('Your review has been successfully submitted!');
             setDescription('');
             setRating(0);
             setImages([]);
+            setImagePreviews([]);
 
             setErrorMessage(''); // Clear error message
 
             // Redirect to the business profile page after a short delay
             setTimeout(() => {
-                navigate(`/business/profile/${businessId}`); // Redirect to business profile
-            }, 2000); // Redirect after 2 seconds
+                navigate(`/business/profile/${businessId}`);
+            }, 2000);
         }
 
         if (error) {
-            setErrorMessage(error); // Set error message from Redux
-            setSuccessMessage(''); // Clear success message
+            setErrorMessage(error);
+            setSuccessMessage('');
         }
     }, [success, error, businessId, navigate]);
 
     return (
         <div className="flex justify-center items-center min-h-screen bg-gray-100">
             <div className="p-6 bg-white shadow-lg rounded-lg max-w-lg w-full">
-                <h1 className="text-3xl font-bold mb-6 text-center">{businessName}</h1> {/* Business Name on top */}
+                <h1 className="text-3xl font-bold mb-6 text-center">{businessName}</h1>
                 <h2 className="text-2xl font-semibold mb-6 text-center">Leave a Review</h2>
 
                 <div className="mb-4 text-center">
@@ -70,9 +103,7 @@ const Review = ({ businessId, businessName, userName }) => {
                     {[1, 2, 3, 4, 5].map((star) => (
                         <FaStar
                             key={star}
-                            className={`cursor-pointer text-2xl ${
-                                star <= (hover || rating) ? 'text-yellow-500' : 'text-gray-400'
-                            }`}
+                            className={`cursor-pointer text-2xl ${star <= (hover || rating) ? 'text-yellow-500' : 'text-gray-400'}`}
                             onClick={() => setRating(star)}
                             onMouseEnter={() => setHover(star)}
                             onMouseLeave={() => setHover(0)}
@@ -103,6 +134,15 @@ const Review = ({ businessId, businessName, userName }) => {
                         hover:file:bg-blue-100
                         mb-4"
                     />
+
+                    {/* Image Previews */}
+                    <div className="flex flex-wrap gap-4">
+                        {imagePreviews.map((preview, index) => (
+                            <div key={index} className="relative">
+                                <img src={preview} alt="Preview" className="w-24 h-24 object-cover rounded-lg shadow-md" />
+                            </div>
+                        ))}
+                    </div>
 
                     <button
                         type="submit"

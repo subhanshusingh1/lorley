@@ -1,7 +1,7 @@
 const Business = require('../models/Business');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
-const { sendEmailNotification, createInAppNotification } = require('./notificationController');
+// const { sendEmailNotification, createInAppNotification } = require('./notificationController');
 const asyncHandler = require('express-async-handler');
 const jwt = require('jsonwebtoken');
 const BusinessOtp = require('../models/businessOtpModel'); 
@@ -12,6 +12,22 @@ const generateOtp = require('../utils/otp'); // Adjust the path as necessary
 const mailgun = require('mailgun-js');
 const mg = mailgun({ apiKey: process.env.MAILGUN_API_KEY, domain: process.env.MAILGUN_DOMAIN });
 const { sendEmail } = require('../utils/mailgunService'); // Import the Mailgun sendEmail function
+const cloudinary = require('../config/cloudinary');
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const fs = require('fs');
+
+// Configure Cloudinary storage for business uploads
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'business_assets', // Folder for business uploads in Cloudinary
+    allowed_formats: ['jpg', 'png', 'jpeg'],
+  },
+});
+
+// Multer middleware
+const upload = multer({ storage: storage });
 
 // Helper function to check OTP validity
 const isOtpValid = (otpDocument) => {
@@ -250,7 +266,7 @@ const calculateAverageRating = (reviews) => {
     return total / reviews.length; // Calculate average
 };
 
-export const fetchBusinessById = asyncHandler(async (req, res) => {
+exports.fetchBusinessById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
     // Fetch business details by ID
@@ -290,133 +306,229 @@ export const fetchBusinessById = asyncHandler(async (req, res) => {
 });
 
 
+// @Desc Generate Refresh Token for Business
+// @Route POST /api/v1/business/refresh-token
+exports.refreshBusinessToken = asyncHandler(async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
 
-
-
-
-
-// Get all businesses with filtering (category, type, etc.)
-exports.getBusinesses = asyncHandler(async (req, res) => {
-    const { category, businessType } = req.query;
-
-    let filter = {};
-    if (category) filter.category = category;
-    if (businessType) filter.businessType = businessType;
-
-    const businesses = await Business.find(filter);
-    res.json(businesses);
-});
-
-// Update business details from dashboard (by business owner)
-exports.updateBusiness = asyncHandler(async (req, res) => {
-    const business = await Business.findById(req.params.id);
-
-    if (business.owner.toString() !== req.user.id) {
-        return res.status(401).json({ message: 'Not authorized to update this business' });
+    if (!refreshToken) {
+        return res.status(401).json({
+            success: false,
+            message: 'Refresh Token not found. Please log in again.',
+        });
     }
 
-    const { name, description, address, businessType, contactInfo, logo, photos, openingHours } = req.body;
+    try {
+        // Verify the refresh token
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+
+        // Find the business by the decoded token's business ID
+        const business = await Business.findById(decoded._id);
+        if (!business) {
+            return res.status(404).json({
+                success: false,
+                message: 'Business not found',
+            });
+        }
+
+        // Create new access and refresh tokens
+        const tokens = await business.createJwt(res);
+
+        res.status(200).json({
+            success: true,
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+        });
+    } catch (error) {
+        console.error('Refresh token error:', error);
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid refresh token. Please log in again.',
+        });
+    }
+});
+
+// Controller to update business details
+exports.updateBusinessDetails = asyncHandler(async (req, res) => {
+    const { id } = req.params; // Get the business ID from request parameters
+    const {
+        name,
+        email,
+        mobile,
+        businessType,
+        address,
+        description,
+        logo,
+        photos,
+        category,
+        openingHours
+    } = req.body; // Destructure incoming data
+
+    // Find the business by ID
+    const business = await Business.findById(id);
+
+    if (!business) {
+        return res.status(404).json({ success: false, message: 'Business not found.' });
+    }
+
+    // Update business details
     business.name = name || business.name;
-    business.description = description || business.description;
-    business.address = address || business.address;
+    business.email = email || business.email;
+    business.mobile = mobile || business.mobile;
     business.businessType = businessType || business.businessType;
-    business.contactInfo = contactInfo || business.contactInfo;
-    if (logo) business.logo = logo;
-    if (photos) business.photos = photos;
-    if (openingHours) business.openingHours = openingHours;
 
+    // Update address if provided
+    if (address) {
+        business.address.houseFlatBlockNo = address.houseFlatBlockNo || business.address.houseFlatBlockNo;
+        business.address.areaStreetVillage = address.areaStreetVillage || business.address.areaStreetVillage;
+        business.address.landmark = address.landmark || business.address.landmark;
+        business.address.pincode = address.pincode || business.address.pincode;
+        business.address.city = address.city || business.address.city;
+        business.address.state = address.state || business.address.state;
+    }
+
+    business.description = description || business.description;
+    business.logo = logo || business.logo;
+    business.photos = photos || business.photos;
+    business.category = category || business.category;
+    business.openingHours = openingHours || business.openingHours;
+
+    // Save the updated business
     const updatedBusiness = await business.save();
-    res.json(updatedBusiness);
+
+    // Generate new tokens if needed
+    const { accessToken, refreshToken } = await business.createJwt(res); // Ensure createJwt method is called
+
+    res.status(200).json({
+        success: true,
+        data: {
+            business: updatedBusiness,
+            accessToken, // Include the new access token in the response
+            refreshToken, // Include the new refresh token in the response
+            message: 'Business details updated successfully.'
+        }
+    });
 });
 
-// Delete a business (by business owner)
-exports.deleteBusiness = asyncHandler(async (req, res) => {
-    const business = await Business.findById(req.params.id);
 
-    if (business.owner.toString() !== req.user.id) {
-        return res.status(401).json({ message: 'Not authorized to delete this business' });
-    }
 
-    await business.remove();
-    res.json({ message: 'Business removed' });
+// @Desc Upload Business Logo
+// @Route POST /api/v1/business/upload-logo
+// Controller for uploading business logo
+exports.uploadBusinessLogo = asyncHandler(async (req, res) => {
+  const businessId = req.business._id; // Assuming req.business is populated by middleware
+
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded.' });
+  }
+
+  try {
+    // Upload file to Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'business_logos', // Separate folder for logos
+      width: 200,
+      height: 200,
+      crop: "fill",
+    });
+
+    // Remove file from local storage
+    fs.unlinkSync(req.file.path);
+
+    // Update business model with the new logo URL
+    const business = await Business.findByIdAndUpdate(
+      businessId,
+      { logo: result.secure_url },
+      { new: true }
+    );
+
+    res.status(200).json({
+      message: 'Business logo uploaded successfully.',
+      logoUrl: business.logo,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error uploading business logo', error: error.message });
+  }
 });
 
-// // Verify a business (mark it as pending for verification)
-// exports.verifyBusiness = asyncHandler(async (req, res) => {
-//     const businessId = req.params.id;
-//     const business = await Business.findById(businessId);
+// @Desc Upload Business Photos
+// @Route POST /api/v1/business/upload-photos
+// Controller for uploading business photos
+exports.uploadBusinessPhotos = asyncHandler(async (req, res) => {
+  const businessId = req.business._id; // Assuming req.business is populated by middleware
 
-//     if (!business) {
-//         return res.status(404).json({ error: 'Business not found' });
-//     }
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ message: 'No files uploaded.' });
+  }
 
-//     business.verificationStatus = 'Pending';
-//     await business.save();
-//     res.json({ message: 'Verification request submitted successfully' });
-// });
+  try {
+    const photoUrls = [];
 
-// Get business by ID (including views increment and limited reviews)
-exports.getBusinessById = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const business = await Business.findById(id).select('name logo photos openingHours address description contactInfo reviews');
+    // Upload each file to Cloudinary
+    for (const file of req.files) {
+      const result = await cloudinary.uploader.upload(file.path, {
+        folder: 'business_photos', // Separate folder for photos
+        width: 800,
+        height: 600,
+        crop: "fill",
+      });
 
-    if (!business) {
-        return res.status(404).json({ error: 'Business not found' });
+      // Add the Cloudinary URL to the array
+      photoUrls.push(result.secure_url);
+
+      // Remove file from local storage
+      fs.unlinkSync(file.path);
     }
 
-    // Increment views count
-    business.views += 1;
-    await business.save();
+    // Update the business model with the new photos array (optional)
+    const business = await Business.findByIdAndUpdate(
+      businessId,
+      { $push: { photos: { $each: photoUrls } } }, // Assuming photos is an array in the Business model
+      { new: true }
+    );
 
-    // Limit to the most recent 5 reviews (if you have a `createdAt` field in reviews)
-    const limitedReviews = business.reviews.slice(-5);
-
-    res.json({ ...business.toObject(), reviews: limitedReviews });
+    res.status(200).json({
+      message: 'Business photos uploaded successfully.',
+      photos: business.photos,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error uploading business photos', error: error.message });
+  }
 });
 
-// Add a review to a business
-exports.addReview = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const business = await Business.findById(id);
+// Controller to fetch all businesses
+exports.fetchAllBusinesses = asyncHandler(async (req, res) => {
+    try {
+        const businesses = await Business.find(); // Fetch all businesses from the database
 
-    if (!business) {
-        return res.status(404).json({ error: 'Business not found' });
+        // Check if businesses exist
+        if (!businesses || businesses.length === 0) {
+            return res.status(404).json({ message: 'No businesses found.' });
+        }
+
+        // Send response with the businesses
+        res.status(200).json({
+            success: true,
+            count: businesses.length,
+            data: businesses,
+        });
+    } catch (error) {
+        // Handle any errors that occur during the fetch operation
+        res.status(500).json({
+            success: false,
+            message: 'Server error. Please try again later.',
+        });
     }
-
-    const newReview = {
-        user: req.user.id,
-        rating: req.body.rating,
-        comment: req.body.comment,
-        createdAt: new Date(), // Ensure to save the creation date if needed
-    };
-
-    business.reviews.push(newReview);
-    await business.save();
-
-    // Send notification to business owner
-    const businessOwner = await User.findById(business.owner);
-    if (businessOwner) {
-        const message = `Your business "${business.name}" has received a new review.`;
-        await sendEmailNotification(businessOwner.email, 'New Review', message);
-        await createInAppNotification(businessOwner._id, message);
-    }
-
-    res.json(business);
 });
 
-// Update business customization (theme, additional details)
-exports.updateBusinessCustomization = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { theme, additionalDetails } = req.body;
+export const searchBusinesses = async (searchTerm) => {
+  const response = await fetch(`/api/business/search?query=${searchTerm}`); // Adjust based on your API
+  if (!response.ok) {
+      throw new Error('Failed to fetch search results');
+  }
+  const data = await response.json();
+  return data; // Assuming this returns { success: true, results: [...] }
+};
 
-    const business = await Business.findById(id);
-    if (!business) {
-        return res.status(404).json({ message: 'Business not found' });
-    }
 
-    business.theme = theme || business.theme;
-    business.additionalDetails = additionalDetails || business.additionalDetails;
-    await business.save();
 
-    res.status(200).json({ message: 'Customization updated successfully' });
-});
+

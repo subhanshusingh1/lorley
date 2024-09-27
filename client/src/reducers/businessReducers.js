@@ -20,6 +20,13 @@ import {
   FETCH_BUSINESS_REQUEST,
     FETCH_BUSINESS_SUCCESS,
     FETCH_BUSINESS_FAILURE,
+    LOGOUT,
+    UPDATE_BUSINESS_REQUEST,
+  UPDATE_BUSINESS_SUCCESS,
+  UPDATE_BUSINESS_FAIL,
+  FETCH_ALL_BUSINESSES_REQUEST,
+  FETCH_ALL_BUSINESSES_SUCCESS,
+  FETCH_ALL_BUSINESSES_FAILURE,
   // BUSINESS_LOGIN_REQUEST,
   // BUSINESS_LOGIN_SUCCESS,
   // BUSINESS_LOGIN_FAIL,
@@ -41,7 +48,7 @@ import {
 import { fetchBusinessById } from '../actions/businessAction';
 
 const initialState = {
-  business: null,
+  business: [],
   loading: false,
   error: null,
 };
@@ -153,6 +160,7 @@ export const businessResetPassword = (state = {}, action) => {
     }
   };
 
+ // Fetch Business Details 
 export const businessDetails = (state = initialState, action) => {
     switch (action.type) {
         case FETCH_BUSINESS_REQUEST:
@@ -180,6 +188,67 @@ export const businessDetails = (state = initialState, action) => {
             return state;
     }
 };
+
+// Logout
+export const businessLogout = (state = {}, action) => {
+  switch (action.type) {
+      case LOGOUT:
+          return { loading: false }; // Set loading to false on logout
+
+      default:
+          return state; // Return current state if no action matches
+  }
+};
+
+// Update Business Reducer
+export const updateBusiness = (state = initialState, action) => {
+  switch (action.type) {
+      case UPDATE_BUSINESS_REQUEST:
+          return {
+              ...state,
+              loading: true, // Set loading to true when request is initiated
+              error: null, // Clear any previous error
+          };
+      case UPDATE_BUSINESS_SUCCESS:
+          return {
+              ...state,
+              loading: false, // Set loading to false after success
+              business: action.payload, // Update with the new business data
+              error: null, // Clear any previous error
+          };
+      case UPDATE_BUSINESS_FAIL:
+          return {
+              ...state,
+              loading: false, // Set loading to false after failure
+              error: action.payload, // Store the error message
+          };
+      default:
+          return state; // Return the current state if no action matches
+  }
+};
+
+
+// Reducer for fetching all businesses
+export const fetchAllBusinesses = (state = initialState, action) => {
+    switch (action.type) {
+        case FETCH_ALL_BUSINESSES_REQUEST:
+            return { ...state, loading: true, error: null }; // Set loading to true
+
+        case FETCH_ALL_BUSINESSES_SUCCESS:
+            return { ...state, loading: false, businesses: action.payload, error: null }; // Update businesses on success
+
+        case FETCH_ALL_BUSINESSES_FAILURE:
+            return { ...state, loading: false, businesses: [], error: action.payload }; // Set error on failure
+
+        default:
+            return state; // Return the current state for unrecognized actions
+    }
+};
+
+
+
+
+
 
 // // Fetching single business details reducer
 // export const businessDetails = (state = { business: {}, loading: false }, action) => {

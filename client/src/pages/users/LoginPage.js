@@ -4,12 +4,12 @@ import { loginUser } from '../../actions/authActions';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { FaEye, FaEyeSlash } from 'react-icons/fa'; // Import eye icons
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // State for toggling password visibility
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const dispatch = useDispatch();
@@ -26,10 +26,6 @@ const LoginPage = () => {
       setError('Please enter a valid email address.');
       return;
     }
-    // if (password.length < 8) {
-    //   setError('Password must be at least 8 characters long.');
-    //   return;
-    // }
 
     setLoading(true);
     const response = await dispatch(loginUser(email, password));

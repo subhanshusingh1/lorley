@@ -5,7 +5,7 @@ const { login, register, verifyOtp, forgotPassword, resetPassword, updateProfile
 const { protect } = require("../middlewares/authMiddleware.js");
 
 const { uploadProfileImage } = require('../controllers/userController');
-const { upload } = require('../config/multerConfig'); 
+const upload  = require('../config/multerConfig'); 
 
 const router = express.Router();
 

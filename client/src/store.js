@@ -12,9 +12,11 @@ import {
   businessOtp,
   businessOtpVerification,
   businessForgotPassword,
-  businessResetPassword
+  businessResetPassword,
+  businessLogout,
+  fetchAllBusinesses
 } from './reducers/businessReducers';
-import reviewReducer from './reducers/reviewReducers';
+import { reviewSubmit } from './reducers/reviewReducers';
 
 // Combine all reducers
 const rootReducer = combineReducers({
@@ -26,9 +28,13 @@ const rootReducer = combineReducers({
     businessLogin: businessLogin,
     businessForgotPassword: businessForgotPassword,
     businessResetPassword: businessResetPassword,
-    businessDetails: businessDetails, // Add the businessDetails reducer here
+    businessDetails: businessDetails,
+    logout: businessLogout,
+    updateBusiness: updateBusiness,
+    fetchBusiness: fetchAllBusinesses
+    // Add the businessDetails reducer here
   }),
-  review: reviewReducer,              // Review reducer
+  review: reviewSubmit,              // Review reducer
 });
 
 // Initial state (optional)
