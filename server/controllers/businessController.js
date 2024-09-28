@@ -520,14 +520,26 @@ exports.fetchAllBusinesses = asyncHandler(async (req, res) => {
     }
 });
 
-export const searchBusinesses = async (searchTerm) => {
-  const response = await fetch(`/api/business/search?query=${searchTerm}`); // Adjust based on your API
-  if (!response.ok) {
-      throw new Error('Failed to fetch search results');
-  }
-  const data = await response.json();
-  return data; // Assuming this returns { success: true, results: [...] }
+// handle business search
+exports.searchBusinesses = async (req, res) => {
+    const { query } = req.query; // Get the search query from the request
+
+    try {
+        // Find businesses that match the search query
+        const businesses = await Business.find({
+            $or: [
+                { name: { $regex: query, $options: 'i' } }, // Match name
+                { description: { $regex: query, $options: 'i' } }, // Match description
+                // Add more fields if needed
+            ],
+        });
+
+        return res.status(200).json({ businesses });
+    } catch (error) {
+        return res.status(500).json({ message: 'Server error' });
+    }
 };
+
 
 
 

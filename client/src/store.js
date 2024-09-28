@@ -14,9 +14,11 @@ import {
   businessForgotPassword,
   businessResetPassword,
   businessLogout,
-  fetchAllBusinesses
+  fetchAllBusinesses,
+  searchBusiness
 } from './reducers/businessReducers';
 import { reviewSubmit } from './reducers/reviewReducers';
+import categoryReducer from './reducers/categoryReducer';
 
 // Combine all reducers
 const rootReducer = combineReducers({
@@ -31,10 +33,14 @@ const rootReducer = combineReducers({
     businessDetails: businessDetails,
     logout: businessLogout,
     updateBusiness: updateBusiness,
-    fetchBusiness: fetchAllBusinesses
+    fetchBusiness: fetchAllBusinesses,
+    searchBusiness: searchBusiness,
     // Add the businessDetails reducer here
   }),
-  review: reviewSubmit,              // Review reducer
+    // Review reducer
+  review: reviewSubmit,
+  // Category reducer    
+  category: categoryReducer,
 });
 
 // Initial state (optional)

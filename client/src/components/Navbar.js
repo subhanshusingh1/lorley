@@ -4,9 +4,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faUserPlus, faUserTie, faSignInAlt, faSignOutAlt, faUserCircle, faStar } from '@fortawesome/free-solid-svg-icons';
 import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
-import { logout } from '../actions/authActions'; // Import your logout action
+import { logout } from '../actions/authActions';
 import { logoutBusiness } from '../actions/businessAction';
-import Cookies from 'js-cookie'; // Import js-cookie for cookie handling
+import { searchBusinesses } from '../actions/businessAction'; // Import search action
+import Cookies from 'js-cookie';
 
 const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -17,13 +18,22 @@ const Navbar = () => {
   const dropdownRef = useRef(null);
 
   // Check if user or business is logged in
-  const isUserLoggedIn = !!Cookies.get('accessToken'); // Check for user access token
-  const isBusinessLoggedIn = !!Cookies.get('refreshToken'); // Check for business refresh token
+  const isUserLoggedIn = !!Cookies.get('accessToken');
+  const isBusinessLoggedIn = !!Cookies.get('refreshToken');
 
-  const handleSearch = (e) => {
+  // Handle search function
+  const handleSearch = async (e) => {
     e.preventDefault();
-    navigate(`/business?search=${searchQuery}`);
-};
+    const results = await dispatch(searchBusinesses(searchQuery)); // Fetch search results
+
+    if (results.length > 0) {
+      // Redirect to the Business Listing page if results are found
+      navigate('/business-listing', { state: { results } }); // Adjust the URL as needed
+    } else {
+      navigate('/'); // Stay on the home page
+      toast.info('No results found, please try another search.'); // Show a message
+    }
+  };
 
   const toggleBusinessDropdown = () => {
     setIsBusinessDropdownOpen(!isBusinessDropdownOpen);
@@ -200,7 +210,7 @@ const Navbar = () => {
                     {/* Logout for Business */}
                     <li>
                       <button
-                        onClick={handleBusinessLogout} // Connect logout function
+                        onClick={handleBusinessLogout}
                         className="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
                       >
                         <FontAwesomeIcon icon={faSignOutAlt} className="text-red-500" />
@@ -239,7 +249,6 @@ const Navbar = () => {
             </li>
           )}
         </ul>
-
       </div>
     </nav>
   );

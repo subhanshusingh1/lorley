@@ -34,54 +34,48 @@ const BusinessListing = () => {
     const placeholderCount = 4;
 
     return (
-        <div className="container mx-auto p-6">
-            <h2 className="text-2xl font-bold text-center mb-6">Discover Nearby Businesses</h2>
+        <div className="container mx-auto p-4 md:p-6">
+            <h2 className="text-2xl font-bold text-center mb-4">Discover Nearby Businesses</h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 py-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-4">
                 {(filteredBusinesses.length > 0 ? filteredBusinesses : Array.from({ length: placeholderCount })).map((business, index) => (
-                    <div key={index} className="bg-white border border-gray-300 rounded-lg overflow-hidden transition-transform transform hover:scale-105">
+                    <div key={index} className="bg-white border border-gray-300 rounded-lg overflow-hidden transition-transform transform hover:scale-105 p-4">
                         {/* Business Logo and Name */}
-                        <div className="flex items-center p-4">
+                        <div className="flex items-center mb-2">
                             {business ? (
                                 <>
                                     <img
-                                        className="w-16 h-16 object-cover rounded-full"
+                                        className="w-12 h-12 object-cover rounded-full"
                                         src={business.logo}
                                         alt={`${business.name} logo`}
                                     />
-                                    <Link to={`/business/${business._id}`} className="text-xl font-semibold ml-4 hover:text-blue-600 transition-colors duration-200">
+                                    <Link to={`/business/${business._id}`} className="text-lg font-semibold ml-2 hover:text-blue-600 transition-colors duration-200">
                                         {business.name}
                                     </Link>
                                 </>
                             ) : (
                                 <>
-                                    <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
-                                    <div className="w-3/4 h-6 bg-gray-200 ml-4 rounded"></div>
+                                    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                                    <div className="w-3/4 h-6 bg-gray-200 ml-2 rounded"></div>
                                 </>
                             )}
                         </div>
 
                         {/* Image Carousel */}
                         {business && business.photos && business.photos.length > 0 ? (
-                            <div className="carousel w-full h-40 overflow-hidden">
-                                <div className="flex">
-                                    {business.photos.map((photo, i) => (
-                                        <div key={i} className="w-full flex-shrink-0">
-                                            <img
-                                                className="w-full h-full object-cover"
-                                                src={photo}
-                                                alt={`Business Photo ${i + 1}`}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="w-full h-32 overflow-hidden mb-2">
+                                <img
+                                    className="w-full h-full object-cover"
+                                    src={business.photos[0]} // Display the first photo for simplicity
+                                    alt={`Business Photo`}
+                                />
                             </div>
                         ) : (
-                            <div className="w-full h-40 bg-gray-200"></div>
+                            <div className="w-full h-32 bg-gray-200 mb-2"></div>
                         )}
 
                         {/* Rating and Address */}
-                        <div className="flex justify-between items-center p-4">
+                        <div className="flex justify-between items-center mb-2">
                             {business ? (
                                 <>
                                     <div className="flex items-center">
@@ -95,7 +89,7 @@ const BusinessListing = () => {
                             ) : (
                                 <>
                                     <div className="flex items-center">
-                                        <div className="w-24 h-5 bg-gray-200"></div>
+                                        <div className="w-16 h-5 bg-gray-200"></div>
                                     </div>
                                     <div className="w-32 h-5 bg-gray-200"></div>
                                 </>
@@ -103,7 +97,7 @@ const BusinessListing = () => {
                         </div>
 
                         {/* Short Description */}
-                        <div className="p-4">
+                        <div className="p-2">
                             {business ? (
                                 <p className="text-sm text-gray-700">{business.description}</p>
                             ) : (

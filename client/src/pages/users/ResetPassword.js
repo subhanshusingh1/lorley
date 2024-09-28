@@ -61,10 +61,10 @@ const ResetPassword = () => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800 p-4">
+        <div className="flex flex-col items-center justify-center min-h-screen  p-4">
             <ToastContainer />
             <div className="bg-white shadow-md rounded px-8 py-6 w-full max-w-md">
-                <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">Reset Password</h2>
+                <h2 className="text-2xl font-bold mb-6 text-center">Reset Password</h2>
                 {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
                 <div className="mb-4">

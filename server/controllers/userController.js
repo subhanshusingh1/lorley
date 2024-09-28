@@ -9,7 +9,8 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('../config/cloudinary');
 const mongoose = require('mongoose');
 const fs = require('fs');
-const { sendEmail } = require('../utils/mailgunService'); // Import your sendEmail function
+const { sendEmail } = require('../utils/mailgunService');
+
 
 // Configure Multer storage with Cloudinary
 const storage = new CloudinaryStorage({
@@ -281,30 +282,31 @@ exports.getProfileById = asyncHandler(async (req, res) => {
 
   // Validate ObjectId
   if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ success: false, message: "Invalid user ID" });
+    return res.status(400).json({ success: false, message: "Invalid user ID" });
   }
 
   try {
-      const user = await User.findById(userId);
-      
-      if (!user) {
-          return res.status(404).json({ success: false, message: "User not found" });
-      }
-
-      res.status(200).json({
-        success: true,
-        data: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-        },
-        message: "User details retrieved successfully",
-      });
-    } catch (error) {
-      console.error("Error fetching user profile:", error);
-      res.status(500).json({ success: false, message: "Server error" });
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
     }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      message: "User details retrieved successfully",
+    });
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 });
+
 
 // @Desc Upload Profile Image
 // @Route POST /api/v1/users/upload-profile-image
@@ -352,10 +354,15 @@ exports.uploadProfileImage = asyncHandler(async (req, res) => {
 exports.deleteUser = asyncHandler(async (req, res) => {
   const { id } = req.params; // Get user ID from params
 
+  // Validate ObjectId
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ success: false, message: "Invalid user ID" });
+  }
+
   // Check if the user exists
   const user = await User.findById(id);
   if (!user) {
-    return res.status(400).json({ message: `No user found with id: ${id}` });
+    return res.status(404).json({ message: `No user found with id: ${id}` });
   }
 
   // Check if OTP data exists for the user
@@ -373,6 +380,7 @@ exports.deleteUser = asyncHandler(async (req, res) => {
     message: 'User Profile Deleted Successfully!',
   });
 });
+
 
 
 // @Desc Generate Refresh Token
@@ -415,6 +423,42 @@ exports.refreshToken = asyncHandler(async (req, res) => {
       });
   }
 });
+
+
+exports.updateUserProfile = asyncHandler(async (req, res) => {
+  const userId = req.user.id; // Assuming user ID is derived from the authenticated user's request
+
+  const { name, email } = req.body; // Extract updated name and email from the request body
+
+  try {
+    // Validate if the user exists
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Update user's profile fields
+    user.name = name || user.name;
+    user.email = email || user.email;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully!",
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 
 
 

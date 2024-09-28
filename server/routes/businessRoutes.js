@@ -11,7 +11,8 @@ const {
     updateBusinessDetails,
     uploadBusinessLogo,
     uploadBusinessPhotos,
-    fetchAllBusinesses
+    fetchAllBusinesses,
+    searchBusinesses
 } = require('../controllers/businessController'); // Ensure these controllers are defined
 const multer = require('multer');
 
@@ -57,6 +58,10 @@ router.post('/upload-logo', protectBusiness, upload.single('file'), uploadBusine
 router.post('/upload-photos', protectBusiness, upload.array('files', 10), uploadBusinessPhotos); // Limiting to 10 files at once
 
 // Define the route to fetch all businesses
-router.get('/business', fetchAllBusinesses);
+router.get('/', fetchAllBusinesses);
+
+// Search for business
+router.get('/search', searchBusinesses);
+
 
 module.exports = router;

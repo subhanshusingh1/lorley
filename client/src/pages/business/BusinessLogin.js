@@ -45,9 +45,9 @@ const BusinessLoginPage = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800 p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen p-4">
       <ToastContainer />
-      <h2 className="text-2xl font-bold mb-6 text-white">Login to Your Business Account</h2>
+      <h2 className="text-2xl font-bold mb-6">Login to Your Business Account</h2>
       <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 py-6 w-full max-w-md">
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 

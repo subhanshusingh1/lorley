@@ -49,7 +49,7 @@ const App = () => {
             <Route path="/business/reset-password" element={<ResetPassword />} />
             
             {/* User Profile Route */}
-            <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+            <Route path="/profile" element={<UserProfile />} />
           </Routes>
         </main>
         <Footer /> {/* Footer at the bottom */}

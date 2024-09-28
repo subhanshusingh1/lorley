@@ -41,12 +41,13 @@ export default function (state = initialState, action) {
   const { type, payload } = action;
 
   switch (type) {
+    // Auth and OTP-related actions
     case REGISTER_REQUEST:
     case LOGIN_REQUEST:
     case OTP_REQUEST:
     case USER_FORGOT_PASSWORD_REQUEST:
     case USER_RESET_PASSWORD_REQUEST:
-    case FETCH_PROFILE_REQUEST: // Add this line for loading state
+    case FETCH_PROFILE_REQUEST: // Loading state for fetching profile
       return {
         ...state,
         loading: true,
@@ -71,13 +72,13 @@ export default function (state = initialState, action) {
     case LOGIN_FAIL:
     case USER_FORGOT_PASSWORD_FAIL:
     case USER_RESET_PASSWORD_FAIL:
-    case FETCH_PROFILE_FAIL: // Add error handling
+    case FETCH_PROFILE_FAIL: // Error handling for profile fetch
       return {
         ...state,
         loading: false,
         error: payload,
         success: false,
-        message: 'Operation failed. Please try again.', // General error message
+        message: 'Operation failed. Please try again.',
       };
 
     case OTP_VERIFIED:
@@ -116,24 +117,24 @@ export default function (state = initialState, action) {
 
     case USER_RESET_PASSWORD_SUCCESS:
       return {
-        ...initialState,
+        ...initialState, // Reset to initial state after password reset
         loading: false,
         success: true,
         message: payload?.message || 'Password reset successfully! Please log in.',
       };
 
+    // Fetch Profile Success
     case FETCH_PROFILE_SUCCESS:
       console.log("Setting user in reducer:", payload); // Check what payload is being set
       return {
-          ...state,
-          user: payload,
-          loading: false,
-          success: true,
-          message: 'Profile retrieved successfully!',
+        ...state,
+        user: payload, // Set the user data from profile fetch
+        loading: false,
+        success: true,
+        message: 'Profile retrieved successfully!',
       };
-  
 
-
+    // Update Profile Success and Failure
     case UPDATE_PROFILE_SUCCESS:
       return {
         ...state,
@@ -152,22 +153,26 @@ export default function (state = initialState, action) {
         message: 'Profile update failed.',
       };
 
-      case DELETE_ACCOUNT_REQUEST:
-        return {
-          ...state,
-          loading: true,
-        };
-      case DELETE_ACCOUNT_SUCCESS:
-        return {
-          ...initialState, // Clear the state after account deletion
-          loading: false,
-        };
-      case DELETE_ACCOUNT_FAIL:
-        return {
-          ...state,
-          loading: false,
-          error: action.payload,
-        };
+    // Delete Account Request, Success, and Failure
+    case DELETE_ACCOUNT_REQUEST:
+      return {
+        ...state,
+        loading: true,
+      };
+
+    case DELETE_ACCOUNT_SUCCESS:
+      return {
+        ...initialState, // Reset the state after account deletion
+        loading: false,
+      };
+
+    case DELETE_ACCOUNT_FAIL:
+      return {
+        ...state,
+        loading: false,
+        error: payload,
+        success: false,
+      };
 
     default:
       return state;

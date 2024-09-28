@@ -36,7 +36,7 @@ import {
   // FETCH_PROFILE_FAIL,
 } from './types';
 
-import { setAccessToken, setRefreshToken } from '../utils/tokenUtils';
+import { setAccessToken, setRefreshToken, getAccessToken, getRefreshToken } from '../utils/tokenUtils';
 import axiosInstance from '../pages/users/axiosInstance'; 
 
 // Register a User
@@ -267,90 +267,123 @@ export const resetPassword = (email, newPassword) => async (dispatch) => {
 
 // Fetch user profile by ID 
 export const fetchUserProfile = (userId) => async (dispatch) => {
-  console.log("fetchUserProfile triggered with userId:", userId); // Check if action is called
-  
   try {
     dispatch({ type: FETCH_PROFILE_REQUEST });
 
-    // Ensure the URL is correct and the userId is valid
-    const response = await axios.get(`${process.env.REACT_APP_API_URL}api/v1/users/profile/${userId}`, { withCredentials: true });
-    console.log("Profile response:", response.data); // Log the response data
-    
-    const { data } = response;
+    const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/users/profile/${userId}`, {
+      withCredentials: true, // Include cookies (JWTs) in the request
+    });
 
-    // Ensure that the structure of the response matches what you're expecting
     dispatch({
       type: FETCH_PROFILE_SUCCESS,
-      payload: {
-        _id: data.data._id,
-        name: data.data.name,
-        email: data.data.email,
-      },
+      payload: response.data.data, // Assuming response structure
     });
   } catch (error) {
-    console.error("Error fetching profile:", error); // Log the error
-    dispatch({
-      type: FETCH_PROFILE_FAIL,
-      payload: error.response?.data?.message || error.message,
-    });
+    if (error.response?.status === 401) {
+      // If access token expired, try refreshing
+      const refreshResponse = await dispatch(refreshAccessToken());
+
+      if (refreshResponse.success) {
+        // Retry fetching profile after refreshing token
+        const retryResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/users/profile/${userId}`, {
+          withCredentials: true,
+        });
+
+        dispatch({
+          type: FETCH_PROFILE_SUCCESS,
+          payload: retryResponse.data.data,
+        });
+      } else {
+        // Handle token refresh failure, possibly log out the user
+        dispatch({ type: FETCH_PROFILE_FAIL, payload: "Session expired, please log in again." });
+      }
+    } else {
+      dispatch({
+        type: FETCH_PROFILE_FAIL,
+        payload: error.response?.data?.message || error.message,
+      });
+    }
   }
 };
+
 
 // Update User Profile
 export const updateUserProfile = (userData) => async (dispatch) => {
   try {
-    dispatch({ type: UPDATE_PROFILE_REQUEST }); // Dispatch loading state
+    dispatch({ type: UPDATE_PROFILE_REQUEST });
+
     const response = await axios.put(`${process.env.REACT_APP_API_URL}/api/v1/users/update-profile`, userData, {
+      withCredentials: true, // Include cookies (JWTs) in the request
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userData.token}` // Include the token if necessary
       },
     });
 
     dispatch({ type: UPDATE_PROFILE_SUCCESS, payload: response.data });
-    return { success: true, message: 'Profile updated successfully!' };
   } catch (error) {
-    dispatch({
-      type: UPDATE_PROFILE_FAIL,
-      payload: error.response?.data?.message || error.message,
-    });
-    return { success: false, message: error.response?.data?.message || error.message };
+    if (error.response?.status === 401) {
+      const refreshResponse = await dispatch(refreshAccessToken());
+
+      if (refreshResponse.success) {
+        // Retry updating profile after refreshing token
+        const retryResponse = await axios.put(`${process.env.REACT_APP_API_URL}/api/v1/users/update-profile`, userData, {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        dispatch({ type: UPDATE_PROFILE_SUCCESS, payload: retryResponse.data });
+      } else {
+        dispatch({ type: UPDATE_PROFILE_FAIL, payload: "Session expired, please log in again." });
+      }
+    } else {
+      dispatch({
+        type: UPDATE_PROFILE_FAIL,
+        payload: error.response?.data?.message || error.message,
+      });
+    }
   }
 };
+
+
 
 // Delete User Account
 export const deleteUserAccount = (userId, password) => async (dispatch) => {
   try {
     dispatch({ type: DELETE_ACCOUNT_REQUEST });
 
-    const token = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('jwt='))
-      ?.split('=')[1]; // Get token from cookie
-
-    if (!token) {
-      throw new Error('Token not found in cookies.');
-    }
-
     await axios.delete(`${process.env.REACT_APP_API_URL}/api/v1/users/profile/${userId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`, // Send token in header
-        'Content-Type': 'application/json',
-      },
-      data: { password }, // Send password with request
-      withCredentials: true, // Ensure credentials (cookies) are included
+      withCredentials: true, // Include cookies (JWTs) in the request
+      data: { password },
     });
 
     dispatch({ type: DELETE_ACCOUNT_SUCCESS });
-    return { success: true, message: 'Account deleted successfully!' };
   } catch (error) {
-    dispatch({
-      type: DELETE_ACCOUNT_FAIL,
-      payload: error.response?.data?.message || error.message,
-    });
-    return { success: false, message: error.response?.data?.message || error.message };
+    if (error.response?.status === 401) {
+      const refreshResponse = await dispatch(refreshAccessToken());
+
+      if (refreshResponse.success) {
+        // Retry account deletion after refreshing token
+        await axios.delete(`${process.env.REACT_APP_API_URL}/api/v1/users/profile/${userId}`, {
+          withCredentials: true,
+          data: { password },
+        });
+
+        dispatch({ type: DELETE_ACCOUNT_SUCCESS });
+      } else {
+        dispatch({ type: DELETE_ACCOUNT_FAIL, payload: "Session expired, please log in again." });
+      }
+    } else {
+      dispatch({
+        type: DELETE_ACCOUNT_FAIL,
+        payload: error.response?.data?.message || error.message,
+      });
+    }
   }
 };
+
+
 
 // get refresh token from backend
 export const refreshAccessToken = () => async (dispatch) => {

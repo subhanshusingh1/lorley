@@ -58,9 +58,9 @@ const BusinessRegister = () => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800 p-4">
+        <div className="flex flex-col items-center justify-center min-h-screen p-4">
             <div className="bg-white shadow-lg rounded-lg px-8 py-6 w-full max-w-md mt-10 mb-10">
-                <h2 className="text-3xl font-bold mb-6 text-gray-800 text-center">Register Your Business</h2>
+                <h2 className="text-3xl font-bold mb-6 text-center">Register Your Business</h2>
                 {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
                 {registerError && <p className="text-red-500 text-sm mb-4">{registerError}</p>}
                 {loading && <p className="text-blue-500 text-sm mb-4">Registering...</p>}

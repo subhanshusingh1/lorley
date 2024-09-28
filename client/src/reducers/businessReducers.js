@@ -27,6 +27,10 @@ import {
   FETCH_ALL_BUSINESSES_REQUEST,
   FETCH_ALL_BUSINESSES_SUCCESS,
   FETCH_ALL_BUSINESSES_FAILURE,
+  SEARCH_BUSINESS_REQUEST,
+  SEARCH_BUSINESS_SUCCESS,
+  SEARCH_BUSINESS_FAIL,
+  SEARCH_BUSINESS_RESET,
   // BUSINESS_LOGIN_REQUEST,
   // BUSINESS_LOGIN_SUCCESS,
   // BUSINESS_LOGIN_FAIL,
@@ -244,6 +248,27 @@ export const fetchAllBusinesses = (state = initialState, action) => {
             return state; // Return the current state for unrecognized actions
     }
 };
+
+// Search Business
+export const searchBusiness = (state = { businesses: [] }, action) => {
+    switch (action.type) {
+        case SEARCH_BUSINESS_REQUEST:
+            return { loading: true, businesses: [] }; // Set loading state and clear previous results
+
+        case SEARCH_BUSINESS_SUCCESS:
+            return { loading: false, businesses: action.payload }; // Save found businesses on successful search
+
+        case SEARCH_BUSINESS_FAIL:
+            return { loading: false, error: action.payload }; // Save error message on failure
+
+        case SEARCH_BUSINESS_RESET: // Optional - to reset state
+            return { businesses: [] }; // Reset state after handling
+
+        default:
+            return state; // Return current state if no action matches
+    }
+};
+
 
 
 

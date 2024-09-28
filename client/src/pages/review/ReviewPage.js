@@ -90,16 +90,16 @@ const Review = ({ businessId, businessName, userName }) => {
     }, [success, error, businessId, navigate]);
 
     return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-100">
+        <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4">
             <div className="p-6 bg-white shadow-lg rounded-lg max-w-lg w-full">
-                <h1 className="text-3xl font-bold mb-6 text-center">{businessName}</h1>
-                <h2 className="text-2xl font-semibold mb-6 text-center">Leave a Review</h2>
+                <h1 className="text-2xl md:text-3xl font-bold mb-4 text-center">{businessName}</h1>
+                <h2 className="text-xl md:text-2xl font-semibold mb-4 text-center">Leave a Review</h2>
 
                 <div className="mb-4 text-center">
                     <span className="font-semibold">User: {userName}</span>
                 </div>
 
-                <div className="flex justify-center mb-6">
+                <div className="flex justify-center mb-4">
                     {[1, 2, 3, 4, 5].map((star) => (
                         <FaStar
                             key={star}
@@ -113,7 +113,7 @@ const Review = ({ businessId, businessName, userName }) => {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <textarea
-                        className="w-full border rounded-lg p-4 mb-4 h-28"
+                        className="w-full border rounded-lg p-4 mb-4 h-28 resize-none"
                         placeholder="Write your review here..."
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
@@ -136,10 +136,10 @@ const Review = ({ businessId, businessName, userName }) => {
                     />
 
                     {/* Image Previews */}
-                    <div className="flex flex-wrap gap-4">
+                    <div className="flex flex-wrap gap-4 justify-center">
                         {imagePreviews.map((preview, index) => (
                             <div key={index} className="relative">
-                                <img src={preview} alt="Preview" className="w-24 h-24 object-cover rounded-lg shadow-md" />
+                                <img src={preview} alt="Preview" className="w-20 h-20 object-cover rounded-lg shadow-md" />
                             </div>
                         ))}
                     </div>

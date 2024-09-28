@@ -30,11 +30,16 @@ import {
     FETCH_ALL_BUSINESSES_REQUEST,
     FETCH_ALL_BUSINESSES_SUCCESS,
     FETCH_ALL_BUSINESSES_FAILURE,
+    SEARCH_BUSINESS_REQUEST,
+    SEARCH_BUSINESS_SUCCESS,
+    SEARCH_BUSINESS_FAILURE,
+    SEARCH_BUSINESS_RESET,
     UPDATE_BUSINESS_FAILURE,
     UPLOAD_BUSINESS_PHOTO_REQUEST,
     UPLOAD_BUSINESS_PHOTO_SUCCESS,
     UPLOAD_BUSINESS_PHOTO_FAILURE,
 } from '../actions/types';
+import { toast } from 'react-toastify';
 
 // import { 
 //     fetchBusinessByIdApi, 
@@ -418,6 +423,29 @@ export const updateBusinessDetails = (businessData) => async (dispatch, getState
             payload: errorMessage,
         });
         return { success: false, message: errorMessage };
+    }
+};
+
+
+// search businesses
+export const searchBusinesses = (searchTerm) => async (dispatch) => {
+    dispatch({ type: SEARCH_BUSINESS_REQUEST });
+    try {
+        const response = await axios.get(`http://localhost:5000/api/v1/businesses/search?query=${searchTerm}`, {
+            withCredentials: true,
+        });
+        dispatch({
+            type: SEARCH_BUSINESS_SUCCESS,
+            payload: response.data.businesses,
+        });
+        return response.data.businesses; // Return results for the HomePage component
+    } catch (error) {
+        dispatch({
+            type: SEARCH_BUSINESS_FAILURE,
+            payload: error.response ? error.response.data.message : error.message,
+        });
+        toast.error('Error fetching businesses. Please try again.');
+        return []; // Return an empty array for error handling
     }
 };
 

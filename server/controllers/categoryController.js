@@ -72,22 +72,24 @@ exports.addCategory = asyncHandler(async (req, res) => {
 // Fetch all categories
 exports.fetchAllCategories = asyncHandler(async (req, res) => {
     try {
-        const categories = await Category.find({}); // Fetch all categories from the Category model
-        
-        // Check if categories exist
+        const categories = await Category.find({}); // Fetch categories
         if (!categories || categories.length === 0) {
-            return res.status(404).json({ message: 'No categories found.' });
+            return res.status(404).json({
+                success: false,
+                message: 'No categories found.',
+            });
         }
-        
-        // Send the list of categories
         res.status(200).json({
             success: true,
-            categories,
+            categories, // This should be an array of categories
         });
     } catch (error) {
+        console.error(error); // Log the error for debugging
         res.status(500).json({
             success: false,
             message: 'Failed to fetch categories. Please try again later.',
         });
     }
 });
+
+
