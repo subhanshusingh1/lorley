@@ -20,9 +20,9 @@ import {
     FETCH_BUSINESS_REQUEST,
     FETCH_BUSINESS_SUCCESS,
     FETCH_BUSINESS_FAILURE,
-    BUSINESS_LOGIN_SUCCESS,
-    BUSINESS_LOGIN_FAIL,
-    BUSINESS_LOGOUT,
+    // BUSINESS_LOGIN_SUCCESS,
+    // BUSINESS_LOGIN_FAIL,
+    // BUSINESS_LOGOUT,
     LOGOUT,
     UPDATE_BUSINESS_REQUEST,
     UPDATE_BUSINESS_SUCCESS,
@@ -33,11 +33,11 @@ import {
     SEARCH_BUSINESS_REQUEST,
     SEARCH_BUSINESS_SUCCESS,
     SEARCH_BUSINESS_FAILURE,
-    SEARCH_BUSINESS_RESET,
-    UPDATE_BUSINESS_FAILURE,
-    UPLOAD_BUSINESS_PHOTO_REQUEST,
-    UPLOAD_BUSINESS_PHOTO_SUCCESS,
-    UPLOAD_BUSINESS_PHOTO_FAILURE,
+    // SEARCH_BUSINESS_RESET,
+    // UPDATE_BUSINESS_FAILURE,
+    // UPLOAD_BUSINESS_PHOTO_REQUEST,
+    // UPLOAD_BUSINESS_PHOTO_SUCCESS,
+    // UPLOAD_BUSINESS_PHOTO_FAILURE,
 } from '../actions/types';
 import { toast } from 'react-toastify';
 
@@ -184,7 +184,6 @@ export const verifyBusinessOtp = (email, otp) => async (dispatch) => {
 export const loginBusiness = (email, password) => async (dispatch) => {
     try {
         dispatch({ type: LOGIN_REQUEST });
-        console.log("Dispatching login request for business:", { email, password });
   
         // Use the business login endpoint
         const res = await axios.post(
@@ -193,13 +192,11 @@ export const loginBusiness = (email, password) => async (dispatch) => {
             { withCredentials: true } // Include withCredentials here
         );
   
-        console.log("Login response:", res.data); // Log the full response for debugging
   
         if (res.data.success) {
             // Extracting tokens and business
             const { accessToken, refreshToken, business } = res.data.data; // Adjust according to your API response structure
   
-            console.log("Login successful! Business:", business); // Log business
   
             // Save access and refresh tokens
             setAccessToken(accessToken); // Utility to set the access token
@@ -219,7 +216,6 @@ export const loginBusiness = (email, password) => async (dispatch) => {
             return { success: false, message: res.data.message || 'Login failed.' };
         }
     } catch (error) {
-        console.error("Login error:", error);
         const errorMessage = error.response?.data?.message || 'An error occurred during business login.';
         dispatch({
             type: LOGIN_FAIL,
@@ -431,7 +427,7 @@ export const updateBusinessDetails = (businessData) => async (dispatch, getState
 export const searchBusinesses = (searchTerm) => async (dispatch) => {
     dispatch({ type: SEARCH_BUSINESS_REQUEST });
     try {
-        const response = await axios.get(`http://localhost:5000/api/v1/businesses/search?query=${searchTerm}`, {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/businesses/search?query=${searchTerm}`, {
             withCredentials: true,
         });
         dispatch({

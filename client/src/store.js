@@ -1,14 +1,12 @@
 import { createStore, applyMiddleware, combineReducers } from 'redux';
 import thunk from 'redux-thunk';
-import { composeWithDevTools } from 'redux-devtools-extension';
+import { composeWithDevTools } from 'redux-devtools-extension'; // DevTools for development
 import authReducer from './reducers/authReducer';
 import { 
   businessRegister, 
   businessLogin, 
-  businessDetails,   // Import the businessDetails reducer
-  allBusinesses, 
+  businessDetails,   
   updateBusiness, 
-  uploadBusinessPhoto, 
   businessOtp,
   businessOtpVerification,
   businessForgotPassword,
@@ -35,9 +33,8 @@ const rootReducer = combineReducers({
     updateBusiness: updateBusiness,
     fetchBusiness: fetchAllBusinesses,
     searchBusiness: searchBusiness,
-    // Add the businessDetails reducer here
   }),
-    // Review reducer
+  // Review reducer
   review: reviewSubmit,
   // Category reducer    
   category: categoryReducer,
@@ -49,11 +46,17 @@ const initialState = {};
 // Middleware
 const middleware = [thunk];
 
+// Conditionally use Redux DevTools only in development mode
+const composeEnhancers =
+  process.env.NODE_ENV === 'development'
+    ? composeWithDevTools
+    : (f) => f; // Disable DevTools in production
+
 // Create store with rootReducer, initial state, and middleware
 const store = createStore(
   rootReducer,
   initialState,
-  composeWithDevTools(applyMiddleware(...middleware))
+  composeEnhancers(applyMiddleware(...middleware))
 );
 
 export default store;

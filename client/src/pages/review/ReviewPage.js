@@ -36,7 +36,7 @@ const Review = ({ businessId, businessName, userName }) => {
             formData.append('upload_preset', 'your_upload_preset'); // Replace with your Cloudinary upload preset
 
             try {
-                const response = await axios.post('http://localhost:5000/api/v1/review/upload-photos/:id', formData);
+                const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/review/upload-photos/:id`, formData);
                 return response.data.secure_url; // Cloudinary URL for the uploaded image
             } catch (error) {
                 console.error('Error uploading image:', error);

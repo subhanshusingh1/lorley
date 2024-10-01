@@ -7,27 +7,25 @@ const connectDB = require('./config/db');
 const cookieParser = require('cookie-parser');
 const userRoutes = require('./routes/userRoutes');
 const businessRoutes = require('./routes/businessRoutes');
-// const adminRoutes = require('./routes/adminRoutes');
-// const jobRoutes = require('./routes/jobRoutes');
-// const newsRoutes = require('./routes/newsRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const categoryRoutes = require('./routes/category.js');
 const helmet = require('helmet');
 const cors = require('cors');
 const { notFound, errorHandler } = require('./middlewares/errorMiddleware.js');
+const compression = require('compression');
 
 
 const app = express();
 
 // security middleware
 app.use(helmet());
-// app.use(cors());
+app.use(compression());
 
 // Use CORS middleware
 app.use(
     cors({
       credentials: true,
-      origin: "http://localhost:3000",
+      origin: "https://lorley.com",
     })
   );
 

@@ -1,8 +1,8 @@
 import axios from 'axios';
 import {
-    SUBMIT_REVIEW_REQUEST,
-    SUBMIT_REVIEW_SUCCESS,
-    SUBMIT_REVIEW_FAILURE,
+    // SUBMIT_REVIEW_REQUEST,
+    // SUBMIT_REVIEW_SUCCESS,
+    // SUBMIT_REVIEW_FAILURE,
     REVIEW_SUBMIT_REQUEST,
     REVIEW_SUBMIT_SUCCESS,
     REVIEW_SUBMIT_FAIL,
@@ -93,7 +93,7 @@ export const editReview = (reviewId, formData) => async (dispatch) => {
     dispatch({ type: EDIT_REVIEW_REQUEST });
 
     try {
-        const response = await axios.put(`http://localhost:5000/api/reviews/${reviewId}`, formData, {
+        const response = await axios.put(`${process.env.REACT_APP_API_URL}/api/reviews/${reviewId}`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },

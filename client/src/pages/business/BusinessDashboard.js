@@ -15,7 +15,7 @@ const BusinessDashboard = ({ businessId }) => {
   const [logoPreview, setLogoPreview] = useState('');
   const [photoPreviews, setPhotoPreviews] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [category, setCategory] = useState('');
+  // const [category, setCategory] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [openingHours, setOpeningHours] = useState({
     monday: { open: { type: '', required: true }, close: { type: '', required: true }, closed: false },
@@ -128,7 +128,7 @@ const BusinessDashboard = ({ businessId }) => {
       const formData = new FormData();
       formData.append('file', file);
       try {
-        const response = await axios.post('http://localhost:5000/api/v1/users/upload-photos', formData);
+        const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/users/upload-photos`, formData);
         photoUrls.push(response.data.secure_url);
       } catch (err) {
         toast.error(`Failed to upload ${file.name}`);

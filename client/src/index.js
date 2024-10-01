@@ -4,6 +4,9 @@ import { Provider } from 'react-redux';
 import store from './store';
 import App from './containers/App';
 import './index.css';
+import {disableReactDevTools} from '@fvilers/disable-react-devtools';
+
+if(process.env.NODE_ENV === 'production') disableReactDevTools();
 
 const root = createRoot(document.getElementById('root'));
 root.render(

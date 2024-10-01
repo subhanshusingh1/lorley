@@ -13,8 +13,8 @@ import {
   OTP_SENT_FAILED,
   OTP_VERIFIED_SUCCESS,
   OTP_VERIFIED_FAILED,
-  OTP_VERIFIED,
-  OTP_FAILED,
+  // OTP_VERIFIED,
+  // OTP_FAILED,
   LOGOUT,
   USER_FORGOT_PASSWORD_REQUEST,
   USER_FORGOT_PASSWORD_SUCCESS,
@@ -44,17 +44,11 @@ export const registerUser = ({ name, email, password }) => async (dispatch) => {
   try {
     dispatch({ type: REGISTER_REQUEST });
 
-    console.log("Registering user with data:", { name, email, password });
-
-    console.log("API Base URL:", process.env.REACT_APP_API_URL);
-
     // Use the environment variable to set the API base URL
     const apiUrl = `${process.env.REACT_APP_API_URL}/api/v1/users/register`;
 
     // Sending registration request to the backend
     const res = await axios.post(apiUrl, { name, email, password });
-
-    console.log("Response from backend:", res.data);
 
     if (res.data.success) {
       dispatch({
@@ -70,7 +64,6 @@ export const registerUser = ({ name, email, password }) => async (dispatch) => {
       return { success: false, message: res.data.message || 'Registration failed.' };
     }
   } catch (error) {
-    console.error('Registration error:', error);
     const errorMessage = error.response?.data?.message || 'An error occurred. Please try again.';
     dispatch({
       type: REGISTER_FAIL,
@@ -167,7 +160,6 @@ export const verifyOtp = (email, otp) => async (dispatch) => {
 export const loginUser = (email, password) => async (dispatch) => {
   try {
     dispatch({ type: LOGIN_REQUEST });
-    console.log("Dispatching login request for:", { email, password });
 
     // Login request
     const res = await axios.post(
@@ -176,13 +168,10 @@ export const loginUser = (email, password) => async (dispatch) => {
       { withCredentials: true } // Include withCredentials here
     );
 
-    console.log("Login response:", res.data); // Log the full response for debugging
-
     if (res.data.success) {
       // Extracting tokens and user
       const { accessToken, refreshToken, user } = res.data.data; // Adjust according to your API response structure
 
-      console.log("Login successful! User:", user); // Log user
 
       // Save access and refresh tokens using utility functions
       setAccessToken(accessToken); // Utility to set the access token
@@ -194,7 +183,6 @@ export const loginUser = (email, password) => async (dispatch) => {
       });
       return { success: true };
     } else {
-      console.log("Login failed:", res.data.message);
       dispatch({
         type: LOGIN_FAIL,
         payload: res.data.message || 'Login failed. Please try again.',
@@ -202,7 +190,6 @@ export const loginUser = (email, password) => async (dispatch) => {
       return { success: false, message: res.data.message || 'Login failed.' };
     }
   } catch (error) {
-    console.error("Login error:", error);
     const errorMessage = error.response?.data?.message || 'An error occurred during login.';
     dispatch({
       type: LOGIN_FAIL,

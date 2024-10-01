@@ -11,7 +11,6 @@ export const fetchCategories = () => {
 
         try {
             const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/categories`);
-            console.log('Fetched Categories:', response.data); // Log the fetched categories
             dispatch({ type: FETCH_CATEGORIES_SUCCESS, payload: response.data.categories }); // Ensure you are dispatching response.data.categories
         } catch (error) {
             dispatch({ type: FETCH_CATEGORIES_FAILURE, payload: error.message });
