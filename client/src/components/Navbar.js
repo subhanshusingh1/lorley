@@ -5,8 +5,7 @@ import { faSearch, faUserPlus, faUserTie, faSignInAlt, faSignOutAlt, faUserCircl
 import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import { logout } from '../actions/authActions';
-import { logoutBusiness } from '../actions/businessAction';
-import { searchBusinesses } from '../actions/businessAction';
+import { logoutBusiness, searchBusinesses } from '../actions/businessAction';
 import Cookies from 'js-cookie';
 
 const Navbar = () => {

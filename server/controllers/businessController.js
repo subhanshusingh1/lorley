@@ -11,7 +11,7 @@ const generateOtp = require('../utils/otp'); // Adjust the path as necessary
 // mailgun
 const mailgun = require('mailgun-js');
 const mg = mailgun({ apiKey: process.env.MAILGUN_API_KEY, domain: process.env.MAILGUN_DOMAIN });
-const { sendEmail } = require('../utils/mailgunService'); // Import the Mailgun sendEmail function
+const { sendMail } = require('../utils/sendMail'); // Import the Mailgun sendEmail function
 const cloudinary = require('../config/cloudinary');
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
@@ -63,6 +63,7 @@ exports.addBusiness = asyncHandler(async (req, res) => {
 
 
 // Controller to send OTP
+// Controller to send OTP
 exports.sendOtp = asyncHandler(async (req, res) => {
     const { email } = req.body;
 
@@ -88,8 +89,8 @@ exports.sendOtp = asyncHandler(async (req, res) => {
         createdAt: new Date(),
     });
 
-    // Send OTP to the business via email using the utility function
-    await sendEmail(email, 'Your OTP for Business Registration', `Your OTP is: ${otp}. It is valid for a limited time.`);
+    // Send OTP to the business via email using the sendMail function
+    await sendMail(email, 'Your OTP for Business Registration', `Your OTP is: ${otp}. It is valid for a limited time.`);
 
     // Send response
     res.status(200).json({
@@ -185,78 +186,85 @@ exports.login = asyncHandler(async (req, res) => {
 // @Desc Forgot Password
 // @Route POST /api/v1/business/forgot-password
 // Controller for forgot password
+// @Desc Forgot Password
+// @Route POST /api/v1/business/forgot-password
 exports.forgotPassword = asyncHandler(async (req, res) => {
     const { email } = req.body;
-  
+
     // Validate email presence
     if (!email) {
-      return res.status(400).send({ message: 'Email is required' });
+        return res.status(400).send({ message: 'Email is required' });
     }
-  
+
     // Check if business exists
     const business = await Business.findOne({ email });
     let otpData = await BusinessOtp.findOne({ email });
-  
+
     if (!business) {
-      return res.status(404).send({ message: 'Business does not exist' });
+        return res.status(404).send({ message: 'Business does not exist' });
     }
-  
+
     // Generate OTP
     const otp = generateOtp();
-  
+
     // Update OTP database
     if (!otpData) {
-      otpData = new BusinessOtp({
-        email,
-        otp,
-        createdAt: new Date(),
-      });
+        otpData = new BusinessOtp({
+            email,
+            otp,
+            createdAt: new Date(),
+        });
     } else {
-      otpData.otp = otp;
-      otpData.createdAt = new Date();
+        otpData.otp = otp;
+        otpData.createdAt = new Date();
     }
-  
+
     await otpData.save();
-  
-    // Send OTP via email using the utility function
-    await sendEmail(email, 'Your OTP for Password Reset', `Your OTP is: ${otp}`);
-  
+
+    // Send OTP via email using the sendMail function
+    await sendMail(email, 'Your OTP for Password Reset', `Your OTP is: ${otp}`);
+
     // Send response
     res.status(200).send({
-      success: true,
-      message: 'OTP sent to your email for password reset',
+        success: true,
+        message: 'OTP sent to your email for password reset',
     });
-  });
+});
+
   
 
 // @Desc Reset Password
 // @Route POST /api/v1/business/reset-password
 // Controller for reset password
 exports.resetPassword = asyncHandler(async (req, res) => {
-  const { email, newPassword } = req.body;
+    const { email, newPassword } = req.body;
 
-  // Validate input
-  if (!email || !newPassword) {
-    return res.status(400).send({ message: 'Email and new password are required' });
-  }
+    // Validate input
+    if (!email || !newPassword) {
+        return res.status(400).send({ message: 'Email and new password are required' });
+    }
 
-  // Check if business exists
-  const business = await Business.findOne({ email });
+    // Check if business exists
+    const business = await Business.findOne({ email });
 
-  if (!business) {
-    return res.status(404).send({ message: 'Business does not exist' });
-  }
+    if (!business) {
+        return res.status(404).send({ message: 'Business does not exist' });
+    }
 
-  // Update business password
-  business.password = newPassword; // You may want to hash the password here
-  await business.save();
+    // Update business password
+    business.password = newPassword; // You may want to hash the password here
+    await business.save();
 
-  // Send success response
-  res.status(200).send({
-    success: true,
-    message: 'Password reset successfully',
-  });
+    // Optionally, send an email notification
+    await sendMail(email, 'Password Reset Confirmation', 'Your password has been successfully reset.');
+
+    // Send success response
+    res.status(200).send({
+        success: true,
+        message: 'Password reset successfully',
+    });
 });
+
 
 
 // Function to calculate average rating from reviews

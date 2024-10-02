@@ -30,45 +30,6 @@ exports.addCategory = asyncHandler(async (req, res) => {
 });
 
 
-// // Register a new category
-// exports.addCategory = asyncHandler(async (req, res) => {
-//     const { name } = req.body;
-
-//     // Trim and normalize the category name
-//     const normalizedCategoryName = name.trim().toLowerCase();
-//     console.log('Trying to add category:', normalizedCategoryName);
-
-//     if (!normalizedCategoryName) {
-//         return res.status(400).json({ message: 'Category name is required.' });
-//     }
-
-//     // Check if category already exists
-//     const existingCategory = await Category.findOne({ name: normalizedCategoryName });
-//     console.log('Existing category found:', existingCategory);
-
-//     if (existingCategory) {
-//         return res.status(400).json({ message: 'Category already exists.' });
-//     }
-
-//     // Create a new category
-//     const newCategory = new Category({ name: normalizedCategoryName });
-
-//     try {
-//         await newCategory.save();
-//         res.status(201).json({
-//             message: 'Category created successfully!',
-//             name: normalizedCategoryName,
-//         });
-//     } catch (error) {
-//         if (error.code === 11000) { // Duplicate key error
-//             return res.status(400).json({ message: 'Category already exists.' });
-//         }
-//         return res.status(500).json({ message: 'Internal server error', error });
-//     }
-// });
-
-
-
 // Fetch all categories
 exports.fetchAllCategories = asyncHandler(async (req, res) => {
     try {

@@ -25,7 +25,7 @@ app.use(compression());
 app.use(
     cors({
       credentials: true,
-      origin: "https://lorley.com",
+      origin: "https://www.lorley.com/",
     })
   );
 

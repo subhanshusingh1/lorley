@@ -4,7 +4,7 @@ import BusinessListing from '../pages/business/BusinessListing';
 import { useDispatch, useSelector } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUtensils, faTshirt, faMedkit, faShoppingCart } from '@fortawesome/free-solid-svg-icons';
-import { fetchCategories } from '../actions/categoryActions'; 
+import { fetchCategories } from '../actions/categoryActions';
 import { toast } from 'react-toastify';
 
 const HomePage = () => {
@@ -36,11 +36,14 @@ const HomePage = () => {
   return (
     <div className="w-full overflow-hidden">
       {/* Banner Section */}
-      <div className="relative w-full h-96 bg-cover bg-center" style={{ backgroundImage: "url('https://via.placeholder.com/1920x700?text=Welcome+to+Lorley')" }}>
+      <div
+        className="relative w-full h-96 bg-cover bg-center"
+        style={{ backgroundImage: "url('/path-to-your-custom-image.jpg')" }}
+      >
         <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-center items-center text-white">
-          <h2 className="text-4xl font-bold">Welcome to Lorley</h2>
-          <p className="text-lg">Your one-stop platform for discovering businesses.</p>
-          <div className="mt-4 space-x-4">
+          <h2 className="text-4xl font-bold text-center">Welcome to Lorley</h2>
+          <p className="text-lg text-center mt-2">Your one-stop platform for discovering businesses.</p>
+          <div className="mt-6 space-x-4">
             <button
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow transition duration-200 ease-in-out transform hover:scale-105"
               onClick={() => navigate('/business/register')}
@@ -56,6 +59,8 @@ const HomePage = () => {
           </div>
         </div>
       </div>
+
+
 
       {/* Business Listing Section */}
       <div className="py-5 mb-10" ref={businessListingRef}>

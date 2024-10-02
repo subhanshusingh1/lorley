@@ -9,7 +9,7 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('../config/cloudinary');
 const mongoose = require('mongoose');
 const fs = require('fs');
-const { sendEmail } = require('../utils/mailgunService');
+// const { sendEmail } = require('../utils/mailgunService');
 
 
 // Configure Multer storage with Cloudinary
@@ -74,40 +74,39 @@ exports.register = asyncHandler(async (req, res) => {
 // @Route POST /api/v1/users/send-otp
 // Controller to send OTP
 exports.sendOtp = asyncHandler(async (req, res) => {
-    const { email } = req.body;
+  const { email } = req.body;
 
-    // Validate email presence
-    if (!email) {
-        return res.status(400).json({ message: 'Email is required' });
-    }
+  // Validate email presence
+  if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+  }
 
-    // Check if user exists
-    const user = await User.findOne({ email });
+  // Check if user exists
+  const user = await User.findOne({ email });
 
-    if (!user) {
-        return res.status(404).json({ message: 'User does not exist. Please register first.' });
-    }
+  if (!user) {
+      return res.status(404).json({ message: 'User does not exist. Please register first.' });
+  }
 
-    // Generate OTP
-    const otp = generateOtp();
+  // Generate OTP
+  const otp = generateOtp();
 
-    // Save OTP to the database
-    await OTP.create({
-        email,
-        otp,
-        createdAt: new Date(),
-    });
+  // Save OTP to the database
+  await OTP.create({
+      email,
+      otp,
+      createdAt: new Date(),
+  });
 
-    // Send OTP to the user via email using Mailgun
-    await sendEmail(email, 'Your OTP for Registration', `Your OTP is: ${otp}. It is valid for a limited time.`);
+  // Send OTP to the user via email using sendMail
+  await sendMail(email, otp);
 
-    // Send response
-    res.status(200).json({
-        success: true,
-        message: 'OTP sent successfully to the registered email.',
-    });
+  // Send response
+  res.status(200).json({
+      success: true,
+      message: 'OTP sent successfully to the registered email.',
+  });
 });
-
 
 
 
@@ -204,7 +203,7 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
 
   // Validate email presence
   if (!email) {
-    return res.status(400).send({ message: 'Email is required' });
+      return res.status(400).send({ message: 'Email is required' });
   }
 
   // Check if user exists
@@ -212,7 +211,7 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
   let otpData = await OTP.findOne({ email });
 
   if (!user) {
-    return res.status(404).send({ message: 'User does not exist' });
+      return res.status(404).send({ message: 'User does not exist' });
   }
 
   // Generate OTP
@@ -220,25 +219,25 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
 
   // Update OTP database
   if (!otpData) {
-    otpData = new OTP({
-      email,
-      otp,
-      createdAt: new Date(),
-    });
+      otpData = new OTP({
+          email,
+          otp,
+          createdAt: new Date(),
+      });
   } else {
-    otpData.otp = otp;
-    otpData.createdAt = new Date();
+      otpData.otp = otp;
+      otpData.createdAt = new Date();
   }
 
   await otpData.save();
 
-  // Send OTP via email
+  // Send OTP via email using sendMail
   await sendMail(email, otp);
 
   // Send response
   res.status(200).send({
-    success: true,
-    message: 'OTP sent to your email for password reset',
+      success: true,
+      message: 'OTP sent to your email for password reset',
   });
 });
 
