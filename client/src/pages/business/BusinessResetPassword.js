@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { resetBusinessPassword } from '../../actions/businessAuthActions'; // Import business reset password action
+import { resetBusinessPassword } from '../../actions/businessAction'; // Import business reset password action
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FaEye, FaEyeSlash } from 'react-icons/fa'; // Importing eye icon
 
-const ResetBusinessPassword = () => {
+const BusinessResetPassword = () => {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
@@ -54,7 +54,7 @@ const ResetBusinessPassword = () => {
 
         if (response.success) {
             toast.success('Password reset successfully!'); // Show success notification
-            navigate('/business-login'); // Redirect to business login page after success
+            navigate('/business/login'); // Redirect to business login page after success
         } else {
             toast.error(response.message || 'Failed to reset password. Please try again.'); // Show error notification
         }
@@ -118,4 +118,4 @@ const ResetBusinessPassword = () => {
     );
 };
 
-export default ResetBusinessPassword;
+export default BusinessResetPassword;

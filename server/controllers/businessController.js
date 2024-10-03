@@ -4,14 +4,12 @@ const bcrypt = require('bcryptjs');
 // const { sendEmailNotification, createInAppNotification } = require('./notificationController');
 const asyncHandler = require('express-async-handler');
 const jwt = require('jsonwebtoken');
-const BusinessOtp = require('../models/businessOtpModel'); 
-const Review = require('../models/Review'); 
+const BusinessOtp = require('../models/businessOtpModel');
+const Review = require('../models/Review');
 // generate otp
 const generateOtp = require('../utils/otp'); // Adjust the path as necessary
 // mailgun
-const mailgun = require('mailgun-js');
-const mg = mailgun({ apiKey: process.env.MAILGUN_API_KEY, domain: process.env.MAILGUN_DOMAIN });
-const { sendMail } = require('../utils/sendMail'); // Import the Mailgun sendEmail function
+const sendMail = require('../utils/sendMail');
 const cloudinary = require('../config/cloudinary');
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
@@ -19,11 +17,11 @@ const fs = require('fs');
 
 // Configure Cloudinary storage for business uploads
 const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'business_assets', // Folder for business uploads in Cloudinary
-    allowed_formats: ['jpg', 'png', 'jpeg'],
-  },
+    cloudinary: cloudinary,
+    params: {
+        folder: 'business_assets', // Folder for business uploads in Cloudinary
+        allowed_formats: ['jpg', 'png', 'jpeg'],
+    },
 });
 
 // Multer middleware
@@ -36,33 +34,52 @@ const isOtpValid = (otpDocument) => {
 };
 
 // Register a new business
-exports.addBusiness = asyncHandler(async (req, res) => {
-    const { name, email, mobile, businessType, category } = req.body;
+exports.registerBusiness = asyncHandler(async (req, res) => {
+    const { name, email, password, mobile, businessType, category } = req.body;
 
-    // Check if the required fields are provided
-    if (!name || !email || !mobile || !businessType || !category) {
-        return res.status(400).json({ message: 'Please provide all required fields.' });
+    // Input validation
+    if (!name || !email || !password || !mobile || !businessType) {
+        return res.status(400).json({ message: 'Please provide all required fields: name, email, password, mobile, and business type.' });
     }
 
-    // Create a new business
-    const newBusiness = new Business({
+    // If businessType is 'Product', ensure that category is provided
+    if (businessType === 'Product' && !category) {
+        return res.status(400).json({ message: 'Please select a category for Products.' });
+    }
+
+    // Check if the business already exists by email
+    const existingBusiness = await Business.findOne({ email });
+
+    if (existingBusiness) {
+        return res.status(400).json({ message: 'Business with this email already exists!' });
+    }
+
+    // Create a new business with basic details
+    const newBusiness = await Business.create({
         name,
         email,
+        password,
         mobile,
         businessType,
-        category,
-        // Additional details can be added later
+        category: businessType === 'Product' ? category : undefined, // Only assign category if it's a Product
     });
 
-    const business = await newBusiness.save();
+    // Send success response
     res.status(201).json({
+        success: true,
+        data: {
+            _id: newBusiness._id,
+            name: newBusiness.name,
+            email: newBusiness.email,
+            mobile: newBusiness.mobile,
+            businessType: newBusiness.businessType,
+            category: newBusiness.businessType === 'Product' ? newBusiness.category : undefined, // Only return category if it's a Product
+        },
         message: 'Business registered successfully!',
-        business, // Send back the registered business details if needed
     });
 });
 
 
-// Controller to send OTP
 // Controller to send OTP
 exports.sendOtp = asyncHandler(async (req, res) => {
     const { email } = req.body;
@@ -82,15 +99,15 @@ exports.sendOtp = asyncHandler(async (req, res) => {
     // Generate OTP
     const otp = generateOtp();
 
-    // Save OTP to the database
+    // Save OTP to the database, associate it with the business
     await BusinessOtp.create({
-        email,
+        business: business._id, // Pass the business ID to fulfill the required 'business' field
         otp,
         createdAt: new Date(),
     });
 
     // Send OTP to the business via email using the sendMail function
-    await sendMail(email, 'Your OTP for Business Registration', `Your OTP is: ${otp}. It is valid for a limited time.`);
+    await sendMail(email, otp);
 
     // Send response
     res.status(200).json({
@@ -98,6 +115,7 @@ exports.sendOtp = asyncHandler(async (req, res) => {
         message: 'OTP sent successfully to the provided email.',
     });
 });
+
 
 
 
@@ -110,23 +128,31 @@ exports.verifyOtp = asyncHandler(async (req, res) => {
         return res.status(400).send({ message: 'Email and OTP are required' });
     }
 
-    // Check for existing OTP document
-    const otpDocument = await BusinessOtp.findOne({ email });
+    // Find the business associated with this email
+    const business = await Business.findOne({ email });
+    if (!business) {
+        return res.status(404).send({ message: 'No business found with this email' });
+    }
+
+    // Find the OTP document associated with the business
+    const otpDocument = await BusinessOtp.findOne({ business: business._id });
 
     if (!otpDocument) {
         return res.status(404).send({ message: 'No OTP record found for the requested email' });
     }
 
-    // Verify OTP
+    // Verify the OTP using the provided function (checking both validity and expiration)
     if (otpDocument.otp !== otp || !isOtpValid(otpDocument)) {
-        return res.status(400).send({ message: 'Invalid or Expired OTP' });
+        return res.status(400).send({ message: 'Invalid or expired OTP' });
     }
 
-    // Fetch user
-    const business = await Business.findOne({ email });
+    // OTP is valid, proceed with business verification
 
     // Create JSON Web Token (JWT) and store it in cookies
     const token = await business.createJwt(res);
+
+    // Delete the OTP after successful verification to prevent reuse
+    // await BusinessOtp.deleteOne({ business: business._id });
 
     // Respond with success
     res.status(200).send({
@@ -135,6 +161,7 @@ exports.verifyOtp = asyncHandler(async (req, res) => {
         message: 'OTP verified successfully',
     });
 });
+
 
 
 // @Desc Business Login
@@ -155,7 +182,7 @@ exports.login = asyncHandler(async (req, res) => {
     }
 
     // Check if the business has verified their email
-    const otpDocument = await BusinessOtp.findOne({ email });
+    const otpDocument = await BusinessOtp.findOne({ business: business._id });
     if (!otpDocument) {
         return res.status(400).send({ message: 'Please verify your email first.' });
     }
@@ -183,11 +210,10 @@ exports.login = asyncHandler(async (req, res) => {
     });
 });
 
+
 // @Desc Forgot Password
 // @Route POST /api/v1/business/forgot-password
 // Controller for forgot password
-// @Desc Forgot Password
-// @Route POST /api/v1/business/forgot-password
 exports.forgotPassword = asyncHandler(async (req, res) => {
     const { email } = req.body;
 
@@ -196,42 +222,45 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
         return res.status(400).send({ message: 'Email is required' });
     }
 
-    // Check if business exists
+    // Check if the business exists with the given email
     const business = await Business.findOne({ email });
-    let otpData = await BusinessOtp.findOne({ email });
-
     if (!business) {
         return res.status(404).send({ message: 'Business does not exist' });
     }
 
-    // Generate OTP
+    // Check if an OTP already exists for this business (using business._id)
+    let otpData = await BusinessOtp.findOne({ business: business._id });
+
+    // Generate a new OTP
     const otp = generateOtp();
 
-    // Update OTP database
+    // Update or create a new OTP document for the business
     if (!otpData) {
+        // If no OTP exists for the business, create a new OTP record
         otpData = new BusinessOtp({
-            email,
+            business: business._id,  // Storing the ObjectId of the business
             otp,
             createdAt: new Date(),
         });
     } else {
+        // If OTP already exists, update the OTP and createdAt fields
         otpData.otp = otp;
         otpData.createdAt = new Date();
     }
 
+    // Save the OTP data in the database
     await otpData.save();
 
-    // Send OTP via email using the sendMail function
-    await sendMail(email, 'Your OTP for Password Reset', `Your OTP is: ${otp}`);
+    // Send the OTP via email using the sendMail function
+    await sendMail(email, otp);
 
-    // Send response
+    // Send the response
     res.status(200).send({
         success: true,
         message: 'OTP sent to your email for password reset',
     });
 });
 
-  
 
 // @Desc Reset Password
 // @Route POST /api/v1/business/reset-password
@@ -251,12 +280,12 @@ exports.resetPassword = asyncHandler(async (req, res) => {
         return res.status(404).send({ message: 'Business does not exist' });
     }
 
-    // Update business password
-    business.password = newPassword; // You may want to hash the password here
+    // Update business password (assuming password hashing is handled in a pre-save hook)
+    business.password = newPassword;
     await business.save();
 
-    // Optionally, send an email notification
-    await sendMail(email, 'Password Reset Confirmation', 'Your password has been successfully reset.');
+    // Optionally, send an email notification about the password change
+    // await sendMail(email, 'Password Reset Confirmation', 'Your password has been successfully reset.');
 
     // Send success response
     res.status(200).send({
@@ -264,6 +293,29 @@ exports.resetPassword = asyncHandler(async (req, res) => {
         message: 'Password reset successfully',
     });
 });
+
+// fetch business detail for dashboard
+exports.getBusinessDetails = async (req, res) => {
+    const { businessId } = req.params; 
+
+    console.log("fetching route hit..")
+
+    try {
+        const business = await Business.findById(businessId);
+
+        if (!business) {
+            return res.status(404).json({ message: 'Business not found' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: business,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+};
 
 
 
@@ -424,83 +476,83 @@ exports.updateBusinessDetails = asyncHandler(async (req, res) => {
 // @Route POST /api/v1/business/upload-logo
 // Controller for uploading business logo
 exports.uploadBusinessLogo = asyncHandler(async (req, res) => {
-  const businessId = req.business._id; // Assuming req.business is populated by middleware
+    const businessId = req.business._id; // Assuming req.business is populated by middleware
 
-  if (!req.file) {
-    return res.status(400).json({ message: 'No file uploaded.' });
-  }
+    if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded.' });
+    }
 
-  try {
-    // Upload file to Cloudinary
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: 'business_logos', // Separate folder for logos
-      width: 200,
-      height: 200,
-      crop: "fill",
-    });
+    try {
+        // Upload file to Cloudinary
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: 'business_logos', // Separate folder for logos
+            width: 200,
+            height: 200,
+            crop: "fill",
+        });
 
-    // Remove file from local storage
-    fs.unlinkSync(req.file.path);
+        // Remove file from local storage
+        fs.unlinkSync(req.file.path);
 
-    // Update business model with the new logo URL
-    const business = await Business.findByIdAndUpdate(
-      businessId,
-      { logo: result.secure_url },
-      { new: true }
-    );
+        // Update business model with the new logo URL
+        const business = await Business.findByIdAndUpdate(
+            businessId,
+            { logo: result.secure_url },
+            { new: true }
+        );
 
-    res.status(200).json({
-      message: 'Business logo uploaded successfully.',
-      logoUrl: business.logo,
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Error uploading business logo', error: error.message });
-  }
+        res.status(200).json({
+            message: 'Business logo uploaded successfully.',
+            logoUrl: business.logo,
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error uploading business logo', error: error.message });
+    }
 });
 
 // @Desc Upload Business Photos
 // @Route POST /api/v1/business/upload-photos
 // Controller for uploading business photos
 exports.uploadBusinessPhotos = asyncHandler(async (req, res) => {
-  const businessId = req.business._id; // Assuming req.business is populated by middleware
+    const businessId = req.business._id; // Assuming req.business is populated by middleware
 
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ message: 'No files uploaded.' });
-  }
-
-  try {
-    const photoUrls = [];
-
-    // Upload each file to Cloudinary
-    for (const file of req.files) {
-      const result = await cloudinary.uploader.upload(file.path, {
-        folder: 'business_photos', // Separate folder for photos
-        width: 800,
-        height: 600,
-        crop: "fill",
-      });
-
-      // Add the Cloudinary URL to the array
-      photoUrls.push(result.secure_url);
-
-      // Remove file from local storage
-      fs.unlinkSync(file.path);
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ message: 'No files uploaded.' });
     }
 
-    // Update the business model with the new photos array (optional)
-    const business = await Business.findByIdAndUpdate(
-      businessId,
-      { $push: { photos: { $each: photoUrls } } }, // Assuming photos is an array in the Business model
-      { new: true }
-    );
+    try {
+        const photoUrls = [];
 
-    res.status(200).json({
-      message: 'Business photos uploaded successfully.',
-      photos: business.photos,
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Error uploading business photos', error: error.message });
-  }
+        // Upload each file to Cloudinary
+        for (const file of req.files) {
+            const result = await cloudinary.uploader.upload(file.path, {
+                folder: 'business_photos', // Separate folder for photos
+                width: 800,
+                height: 600,
+                crop: "fill",
+            });
+
+            // Add the Cloudinary URL to the array
+            photoUrls.push(result.secure_url);
+
+            // Remove file from local storage
+            fs.unlinkSync(file.path);
+        }
+
+        // Update the business model with the new photos array (optional)
+        const business = await Business.findByIdAndUpdate(
+            businessId,
+            { $push: { photos: { $each: photoUrls } } }, // Assuming photos is an array in the Business model
+            { new: true }
+        );
+
+        res.status(200).json({
+            message: 'Business photos uploaded successfully.',
+            photos: business.photos,
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error uploading business photos', error: error.message });
+    }
 });
 
 // Controller to fetch all businesses

@@ -125,7 +125,6 @@ export default function (state = initialState, action) {
 
     // Fetch Profile Success
     case FETCH_PROFILE_SUCCESS:
-      console.log("Setting user in reducer:", payload); // Check what payload is being set
       return {
         ...state,
         user: payload, // Set the user data from profile fetch

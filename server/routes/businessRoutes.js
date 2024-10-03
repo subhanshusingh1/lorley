@@ -12,7 +12,9 @@ const {
     uploadBusinessLogo,
     uploadBusinessPhotos,
     fetchAllBusinesses,
-    searchBusinesses
+    searchBusinesses,
+    registerBusiness,
+    getBusinessDetails
 } = require('../controllers/businessController'); // Ensure these controllers are defined
 const multer = require('multer');
 
@@ -24,8 +26,8 @@ const upload = multer({ dest: 'uploads/' });
 
 const router = express.Router();
 
-// Route to register/add a new business
-router.post('/', addBusiness);
+// Route to register a new business
+router.post('/register', registerBusiness);
 
 // Route for businesses to log in
 router.post('/login', login);
@@ -43,13 +45,16 @@ router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 
 // Route to fetch Business Details
-router.get('/:id', protectBusiness, fetchBusinessById);
+router.get('/profile/:id', protectBusiness, fetchBusinessById);
 
 // Generate Refresh Token
 router.post('/refresh-token', refreshBusinessToken)
 
+// fetch details for dashboard
+router.get('/dashboard/:businessId', protectBusiness, getBusinessDetails);
+
 // Update Business Route
-router.put('/business/:id', protectBusiness, updateBusinessDetails);
+router.put('/:id', protectBusiness, updateBusinessDetails);
 
 // Single file upload for logo
 router.post('/upload-logo', protectBusiness, upload.single('file'), uploadBusinessLogo);

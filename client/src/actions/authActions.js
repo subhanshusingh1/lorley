@@ -38,6 +38,7 @@ import {
 
 import { setAccessToken, setRefreshToken, getAccessToken, getRefreshToken } from '../utils/tokenUtils';
 import axiosInstance from '../pages/users/axiosInstance'; 
+import { toast } from 'react-toastify';
 
 // Register a User
 export const registerUser = ({ name, email, password }) => async (dispatch) => {
@@ -154,8 +155,6 @@ export const verifyOtp = (email, otp) => async (dispatch) => {
 };
 
 
-
-// login
 // login
 export const loginUser = (email, password) => async (dispatch) => {
   try {
@@ -170,7 +169,7 @@ export const loginUser = (email, password) => async (dispatch) => {
 
     if (res.data.success) {
       // Extracting tokens and user
-      const { accessToken, refreshToken, user } = res.data.data; // Adjust according to your API response structure
+      const { accessToken, refreshToken, user } = res.data.data; 
 
 
       // Save access and refresh tokens using utility functions
@@ -258,7 +257,7 @@ export const fetchUserProfile = (userId) => async (dispatch) => {
     dispatch({ type: FETCH_PROFILE_REQUEST });
 
     const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/users/profile/${userId}`, {
-      withCredentials: true, // Include cookies (JWTs) in the request
+      withCredentials: true,
     });
 
     dispatch({
@@ -300,7 +299,7 @@ export const updateUserProfile = (userData) => async (dispatch) => {
     dispatch({ type: UPDATE_PROFILE_REQUEST });
 
     const response = await axios.put(`${process.env.REACT_APP_API_URL}/api/v1/users/update-profile`, userData, {
-      withCredentials: true, // Include cookies (JWTs) in the request
+      withCredentials: true,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -396,6 +395,35 @@ export const refreshAccessToken = () => async (dispatch) => {
       message: errorMessage,
     };
   }
+};
+
+
+// upload profile image
+export const uploadProfileImage = (file) => async (dispatch) => {
+    const formData = new FormData();
+    formData.append('profileImage', file);
+
+    try {
+        const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/users/upload-profile-image`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            withCredentials: true
+        });
+
+        const profileImageUrl = response.data.profileImageUrl;
+
+        // Dispatch action to update the user profile with the new image URL
+        dispatch(updateUserProfile({ profileImage: profileImageUrl }));
+
+        // Success toast
+        toast.success('Profile image updated successfully!');
+        return profileImageUrl;
+    } catch (error) {
+        // Error toast
+        toast.error('Failed to upload image');
+        throw error;
+    }
 };
 
 

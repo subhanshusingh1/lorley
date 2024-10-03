@@ -5,17 +5,7 @@ const { cloudinary } = require('../config/cloudinary');
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const fs = require('fs');
-
-// Configure Cloudinary storage for review uploads
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'review_photos', // Folder for review uploads in Cloudinary
-    allowed_formats: ['jpg', 'png', 'jpeg'],
-  },
-});
-
-const upload = multer({ storage }); // Create multer instance with Cloudinary storage
+const upload =  require('../config/multerConfig'); // Create multer instance with Cloudinary storage
 
 // @desc Upload photos for a review and submit the review
 // @route POST /api/v1/reviews/:businessId
@@ -94,53 +84,4 @@ exports.submitReview = asyncHandler(async (req, res) => {
         res.status(500).json({ message: 'Error submitting review', error: error.message });
     }
 });
-
-
-// // @desc Upload photos for a review and submit the review
-// // @route POST /api/v1/reviews/:businessId
-// exports.uploadReviewPhotos = asyncHandler(async (req, res) => {
-//   const { businessId } = req.params; // Get the business ID from the request parameters
-//   const userId = req.user._id; // Assuming req.user is populated by middleware (for authentication)
-//   const { rating, comment } = req.body; // The rating and comment come from the request body
-
-//   if (!req.files || req.files.length === 0) {
-//     return res.status(400).json({ message: 'No files uploaded.' });
-//   }
-
-//   try {
-//     const photoUrls = [];
-
-//     // Upload each file to Cloudinary
-//     for (const file of req.files) {
-//       const result = await cloudinary.uploader.upload(file.path, {
-//         folder: 'review_photos', // Upload to a dedicated folder for review photos
-//         width: 800,
-//         height: 600,
-//         crop: "fill",
-//       });
-
-//       // Add the Cloudinary URL to the array
-//       photoUrls.push(result.secure_url);
-
-//       // Remove file from local storage after successful upload
-//       fs.unlinkSync(file.path);
-//     }
-
-//     // Create a new review with the uploaded photos
-//     const review = await Review.create({
-//       business: businessId,
-//       user: userId,
-//       rating,
-//       comment,
-//       images: photoUrls, // Store Cloudinary URLs in the images field
-//     });
-
-//     res.status(200).json({
-//       message: 'Review submitted and photos uploaded successfully.',
-//       review,
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: 'Error uploading review photos', error: error.message });
-//   }
-// });
 

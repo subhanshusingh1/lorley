@@ -38,39 +38,22 @@ const businessSchema = new mongoose.Schema({
         enum: ['Product', 'Service'],
     },
     address: {
-        houseFlatBlockNo: {
-            type: String,
-            required: [true, 'House/Flat/Block No is required'],
-        },
-        areaStreetVillage: {
-            type: String,
-            required: [true, 'Area/Street/Village is required'],
-        },
-        landmark: {
-            type: String,
-            required: [true, 'Landmark is required'],
-        },
+        houseFlatBlockNo: { type: String },
+        areaStreetVillage: { type: String },
+        landmark: { type: String },
         pincode: {
             type: String,
-            required: [true, 'Pincode is required'],
             validate: {
                 validator: function(v) {
-                    // Regex for Indian pincode (6 digits)
-                    return /^[1-9][0-9]{5}$/.test(v);
+                    return /^[1-9][0-9]{5}$/.test(v); // Regex for Indian pincode
                 },
                 message: 'Invalid pincode format. Please enter a valid 6-digit Indian pincode.'
             }
         },
-        city: {
-            type: String,
-            required: [true, 'City is required'],
-        },
-        state: {
-            type: String,
-            required: [true, 'State is required'],
-        }
+        city: { type: String },
+        state: { type: String }
     },
-    description: String,
+    description: { type: String },
     logo: {
         type: String,
         validate: [validator.isURL, 'Invalid URL for logo'],
@@ -83,16 +66,18 @@ const businessSchema = new mongoose.Schema({
     category: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Category',
-        required: [true, 'Category is required'],
+        required: function () {
+            return this.businessType === 'Product'; // Required only for Products
+        },
     },
     openingHours: {
-        monday: { open: { type: String, required: true }, close: { type: String, required: true } },
-        tuesday: { open: { type: String, required: true }, close: { type: String, required: true } },
-        wednesday: { open: { type: String, required: true }, close: { type: String, required: true } },
-        thursday: { open: { type: String, required: true }, close: { type: String, required: true } },
-        friday: { open: { type: String, required: true }, close: { type: String, required: true } },
-        saturday: { open: { type: String, required: true }, close: { type: String, required: true } },
-        sunday: { open: { type: String, required: true }, close: { type: String, required: true } },
+        monday: { open: { type: String }, close: { type: String } },
+        tuesday: { open: { type: String }, close: { type: String } },
+        wednesday: { open: { type: String }, close: { type: String } },
+        thursday: { open: { type: String }, close: { type: String } },
+        friday: { open: { type: String }, close: { type: String } },
+        saturday: { open: { type: String }, close: { type: String } },
+        sunday: { open: { type: String }, close: { type: String } },
     },
     views: {
         type: Number,

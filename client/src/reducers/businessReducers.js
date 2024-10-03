@@ -31,6 +31,9 @@ import {
   SEARCH_BUSINESS_SUCCESS,
   SEARCH_BUSINESS_FAIL,
   SEARCH_BUSINESS_RESET,
+  FETCH_BUSINESS_DETAILS_REQUEST,
+    FETCH_BUSINESS_DETAILS_SUCCESS,
+    FETCH_BUSINESS_DETAILS_FAILURE,
   // BUSINESS_LOGIN_REQUEST,
   // BUSINESS_LOGIN_SUCCESS,
   // BUSINESS_LOGIN_FAIL,
@@ -58,19 +61,19 @@ const initialState = {
 };
 
 // Business Registeration
-export const businessRegister = (state = {}, action) => {
+export const businessRegister = (state = initialState, action) => {
     switch (action.type) {
         case BUSINESS_REGISTER_REQUEST:
-            return { loading: true }; // Set loading state when the request is initiated
+            return { ...state, loading: true, error: null }; // Set loading state and clear error
 
         case BUSINESS_REGISTER_SUCCESS:
-            return { loading: false, businessInfo: action.payload }; // Save business info on successful registration
+            return { loading: false, businessInfo: action.payload, error: null }; // Save business info on successful registration
 
         case BUSINESS_REGISTER_FAIL:
             return { loading: false, error: action.payload }; // Save error message on failure
 
-        case BUSINESS_REGISTER_RESET: // Optional - to reset state
-            return {}; // Reset state after registration or error handling
+        case BUSINESS_REGISTER_RESET:
+            return initialState; // Reset state to initial state
 
         default:
             return state; // Return current state if no action matches
@@ -163,6 +166,33 @@ export const businessResetPassword = (state = {}, action) => {
         return state; // Return current state if no action matches
     }
   };
+
+  // details for dashbaord
+  export const businessDetailsDashboard = (state = initialState, action) => {
+    switch (action.type) {
+        case FETCH_BUSINESS_DETAILS_REQUEST:
+            return {
+                ...state,
+                loading: true,
+                error: null,
+            };
+        case FETCH_BUSINESS_DETAILS_SUCCESS:
+            return {
+                ...state,
+                loading: false,
+                businessDetails: action.payload,
+                error: null,
+            };
+        case FETCH_BUSINESS_DETAILS_FAILURE:
+            return {
+                ...state,
+                loading: false,
+                error: action.payload,
+            };
+        default:
+            return state;
+    }
+};
 
  // Fetch Business Details 
 export const businessDetails = (state = initialState, action) => {

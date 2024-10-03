@@ -5,10 +5,9 @@ const { login, register, verifyOtp, forgotPassword, resetPassword, updateProfile
 const { protect } = require("../middlewares/authMiddleware.js");
 
 const { uploadProfileImage } = require('../controllers/userController');
-const upload  = require('../config/multerConfig'); 
+const upload  = require('../config/multerConfig.js'); 
 
 const router = express.Router();
-
 
 // Route for user registration
 router.post("/register", register);
@@ -42,8 +41,5 @@ router.put('/update-profile', protect, updateUserProfile); // Assuming the user 
 
 // Route to delete user account
 router.delete('/profile/:id', protect, deleteUser); // Assuming the user needs to be authenticated to delete their account
-
-module.exports = router;
-
 
 module.exports = router;

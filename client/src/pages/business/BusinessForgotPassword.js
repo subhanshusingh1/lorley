@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { forgotBusinessPassword, verifyBusinessOtp } from '../../actions/businessAuthActions'; // Update actions for business
+import { forgotBusinessPassword, verifyBusinessOtp } from '../../actions/businessAction'; 
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';

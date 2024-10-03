@@ -38,7 +38,7 @@ const BusinessLoginPage = () => {
 
     if (response.success) {
       toast.success('Login successful!');
-      navigate('/business-dashboard'); // Redirect to the business dashboard
+      navigate('/business/dashboard'); // Redirect to the business dashboard
     } else {
       toast.error(response.message || 'Login failed. Please check your credentials.');
     }
@@ -92,7 +92,7 @@ const BusinessLoginPage = () => {
         </button>
 
         <div className="mt-4 text-center">
-          <Link to="/forgot-password" className="text-blue-500 hover:underline">Forgot Password?</Link>
+          <Link to="/business/forgot-password" className="text-blue-500 hover:underline">Forgot Password?</Link>
         </div>
 
         <div className="mt-4 text-center">

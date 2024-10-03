@@ -36,7 +36,7 @@ const UserSchema = new mongoose.Schema({
         default: ''
     },
     refreshToken: {
-        type: String,
+        type: String, // Storing refresh token
         default: '',
     }
 }, {
@@ -69,26 +69,27 @@ UserSchema.methods.generateRefreshToken = function () {
 
 // Creating Json Web Token and storing it in cookies
 UserSchema.methods.createJwt = async function (res) {
-    const accessToken = this.generateAccessToken();
-    const refreshToken = this.generateRefreshToken();
+    const accessToken = this.generateAccessToken(); // Generate access token
+    const refreshToken = this.generateRefreshToken(); // Generate refresh token
 
-    this.refreshToken = refreshToken;
-    await this.save();
+    this.refreshToken = refreshToken; // Store refresh token in the user document
+    await this.save(); // Save user document
 
+    // Set access token cookie
     res.cookie('accessToken', accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 15 * 60 * 1000 // 15 minutes
     });
 
+    // Set refresh token cookie
     res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken }; // Return tokens
 };
 
 module.exports = mongoose.model('User', UserSchema);
-

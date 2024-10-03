@@ -3,26 +3,8 @@ const User = require('../models/User');
 const OTP = require('../models/otpModel'); 
 const generateOtp = require('../utils/otp'); 
 const sendMail = require('../utils/sendMail'); 
-const bcrypt = require('bcryptjs');
-const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary = require('../config/cloudinary');
+const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
-const fs = require('fs');
-// const { sendEmail } = require('../utils/mailgunService');
-
-
-// Configure Multer storage with Cloudinary
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'user_profiles', // The name of the folder in Cloudinary
-    allowed_formats: ['jpg', 'png', 'jpeg'], // Allowed image formats
-  },
-});
-
-// Create the multer upload middleware
-const upload = multer({ storage: storage });
 
 // Helper function to check OTP validity
 const isOtpValid = (otpDocument) => {
@@ -66,7 +48,7 @@ exports.register = asyncHandler(async (req, res) => {
       email: user.email,
       // mobile: user.mobile,
     },
-    message: 'User registered successfully. Please request OTP separately.',
+    message: 'User registered successfully. Please verify otp',
   });
 });
 
@@ -309,48 +291,42 @@ exports.getProfileById = asyncHandler(async (req, res) => {
 
 // @Desc Upload Profile Image
 // @Route POST /api/v1/users/upload-profile-image
-// Upload Profile Image Controller
-exports.uploadProfileImage = asyncHandler(async (req, res) => {
-    const userId = req.user._id;  // Get userId from req.user, populated by protect middleware
-
+// Upload Profile Image
+exports.uploadProfileImage = async (req, res) => {
+  try {
     if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded." });
+      return res.status(400).json({ message: 'No file uploaded.' });
     }
 
-    try {
-        // Upload the file to Cloudinary
-        const result = await cloudinary.uploader.upload(req.file.path, {
-            folder: 'profile_images',
-            width: 150,
-            height: 150,
-            crop: "fill"
-        });
+    console.log("file upload started");
 
-        // Remove the file from local storage
-        fs.unlinkSync(req.file.path);
+    const userId = req.user._id; // Make sure to get the user ID from the request
 
-        // Update the user's profile with the new image URL
-        const user = await User.findByIdAndUpdate(
-            userId,
-            { profileImage: result.secure_url },
-            { new: true }
-        );
+    // Update the user's profile with the new image URL
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { profileImage: req.file.path }, // req.file.path contains the Cloudinary URL
+      { new: true }
+    );
 
-        res.status(200).json({
-            message: "Profile image uploaded successfully.",
-            profileImageUrl: user.profileImage
-        });
-
-    } catch (error) {
-        res.status(500).json({ message: "Error uploading profile image", error: error.message });
-    }
-});
+    return res.status(200).json({
+      message: 'Profile image uploaded successfully.',
+      profileImageUrl: user.profileImage,
+    });
+  } catch (error) {
+    console.error('Error uploading profile image:', error);
+    return res.status(500).json({ message: 'Error uploading profile image', error: error.message });
+  }
+};
 
 
 // @Desc Delete User Account
 // @Route DELETE /api/v1/users/profile/:id
 // Delete user Account
 exports.deleteUser = asyncHandler(async (req, res) => {
+
+  console.log('User ID:', req.user ? req.user.id : 'No user in request');
+
   const { id } = req.params; // Get user ID from params
 
   // Validate ObjectId
@@ -425,6 +401,9 @@ exports.refreshToken = asyncHandler(async (req, res) => {
 
 
 exports.updateUserProfile = asyncHandler(async (req, res) => {
+
+  console.log('User ID:', req.user ? req.user.id : 'No user in request');
+
   const userId = req.user.id; // Assuming user ID is derived from the authenticated user's request
 
   const { name, email } = req.body; // Extract updated name and email from the request body

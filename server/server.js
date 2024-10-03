@@ -20,14 +20,14 @@ const app = express();
 // security middleware
 app.use(helmet());
 app.use(compression());
+// app.use(cors());
 
 // Use CORS middleware
-app.use(
-    cors({
-      credentials: true,
-      origin: "https://www.lorley.com/",
-    })
-  );
+app.use(cors({
+    origin: 'http://localhost:3000', 
+    credentials: true, 
+}));
+  
 
 
 // parse json 

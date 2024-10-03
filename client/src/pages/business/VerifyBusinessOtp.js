@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { sendBusinessOtp, verifyBusinessOtp } from '../../actions/authActions'; // Update action imports
+import { sendBusinessOtp, verifyBusinessOtp } from '../../actions/businessAction'; // Update action imports
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const VerifyBusinessOtpPage = () => {
+const VerifyBusinessOtp = () => {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false); // State to track if OTP is sent
@@ -43,7 +43,7 @@ const VerifyBusinessOtpPage = () => {
     const response = await dispatch(verifyBusinessOtp(email, otp)); // Verify OTP with email and OTP entered
     if (response.success) {
       toast.success('OTP verified successfully!');
-      navigate('/business-login'); // Redirect to business login page after successful verification
+      navigate('/business/login'); // Redirect to business login page after successful verification
     } else {
       toast.error(response.message || 'OTP verification failed. Please try again.');
     }
@@ -104,10 +104,10 @@ const VerifyBusinessOtpPage = () => {
         )}
       </form>
 
-      {error && <p className="text-red-500 mt-4">{error}</p>}
-      {message && <p className="text-green-500 mt-4">{message}</p>}
+      {/* {error && <p className="text-red-500 mt-4">{error}</p>} */}
+      {/* {message && <p className="text-green-500 mt-4">{message}</p>} */}
     </div>
   );
 };
 
-export default VerifyBusinessOtpPage;
+export default VerifyBusinessOtp;

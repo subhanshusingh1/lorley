@@ -1,71 +1,75 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout, updateUserProfile, deleteUserAccount, fetchUserProfile } from '../../actions/authActions';
+import { logout, updateUserProfile, deleteUserAccount, fetchUserProfile, uploadProfileImage } from '../../actions/authActions';
 import { toast } from 'react-toastify';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const UserProfile = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    
+
     const user = useSelector(state => state.auth.user);
     const loading = useSelector(state => state.auth.loading);
     const error = useSelector(state => state.auth.error);
-    
+
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [imagePreview, setImagePreview] = useState("https://via.placeholder.com/150");
     const [isDeleteAccountVisible, setDeleteAccountVisible] = useState(false);
     const [password, setPassword] = useState('');
-    const [profileImage, setProfileImage] = useState(null);
+    const [isUpdating, setIsUpdating] = useState(false); // Loading state for profile update
 
     const userId = user?._id;
 
     useEffect(() => {
-        if (!user && userId) {
+        if (userId) {
             dispatch(fetchUserProfile(userId));
+        } else {
+            console.error("User ID is not available");
         }
-    }, [dispatch, user, userId]);
+    }, [dispatch, userId]);
 
     useEffect(() => {
         if (user) {
             setName(user.name || '');
             setEmail(user.email || '');
-            setImagePreview(user.profileImage || "https://via.placeholder.com/150");
+            setImagePreview(user.profileImage);
         }
     }, [user]);
 
-    const handleSubmit = (e) => {
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <div className="loader">Loading...</div>
+            </div>
+        );
+    }
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        dispatch(updateUserProfile({ name, email }))
-            .then(() => {
-                toast.success('Profile updated successfully!');
-            })
-            .catch((err) => {
-                toast.error(err.message);
-            });
+        setIsUpdating(true); // Set loading state to true
+        try {
+            await dispatch(updateUserProfile({ name, email }));
+            toast.success('Profile updated successfully!');
+            // Fetch updated user data after successful update
+            await dispatch(fetchUserProfile(userId));
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setIsUpdating(false); // Reset loading state
+        }
     };
 
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
-        const formData = new FormData();
-        formData.append('profileImage', file);
-    
         try {
-            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/users/upload-profile-image`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-                withCredentials: true
-            });
-    
-            setProfileImage(response.data.profileImageUrl);
-            setImagePreview(response.data.profileImageUrl);
-            dispatch(updateUserProfile({ profileImage: response.data.profileImageUrl }));
-            toast.success('Profile image updated successfully!');
+            const profileImageUrl = await dispatch(uploadProfileImage(file));
+            console.log('Profile Image URL:', profileImageUrl); // Log the URL for debugging
+            setImagePreview(profileImageUrl);
+            toast.success('Profile image uploaded successfully!');
         } catch (err) {
-            toast.error('Failed to upload image');
+            console.error('Image upload failed:', err);
+            toast.error('Image upload failed. Please try again.');
         }
     };
 
@@ -96,11 +100,10 @@ const UserProfile = () => {
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100 p-6">
             <div className="flex flex-col md:flex-row w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden">
-                {/* Left Section: User Name and Profile Image */}
                 <div className="w-full md:w-1/3 bg-blue-600 flex flex-col items-center justify-center p-6">
                     <img
                         className="rounded-full h-32 w-32 object-cover border-4 border-white mb-4"
-                        src={imagePreview}
+                        src={imagePreview || "https://via.placeholder.com/150"} 
                         alt="User Avatar"
                     />
                     <h2 className="text-white text-2xl font-semibold mb-2">{name || 'No Name Available'}</h2>
@@ -120,7 +123,6 @@ const UserProfile = () => {
                     </label>
                 </div>
 
-                {/* Right Section: User Info and Actions */}
                 <div className="w-full md:w-2/3 p-8">
                     <h2 className="text-3xl font-semibold text-gray-800 mb-6">Profile Information</h2>
 
@@ -150,13 +152,13 @@ const UserProfile = () => {
                         </div>
                         <button
                             type="submit"
-                            className="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                            className={`w-full ${isUpdating ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600'} text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300`}
+                            disabled={isUpdating} // Disable button while updating
                         >
-                            Update Profile
+                            {isUpdating ? 'Updating...' : 'Update Profile'}
                         </button>
                     </form>
 
-                    {/* Change Password Section */}
                     <div className="mt-6">
                         <h3 className="text-lg font-semibold mb-2">Change Password</h3>
                         <button
@@ -167,7 +169,6 @@ const UserProfile = () => {
                         </button>
                     </div>
 
-                    {/* Logout Section */}
                     <div className="mt-6">
                         <h3 className="text-lg font-semibold mb-2">Logout</h3>
                         <button
@@ -178,7 +179,6 @@ const UserProfile = () => {
                         </button>
                     </div>
 
-                    {/* Delete Account Section */}
                     <div className="mt-6">
                         <h3 className="text-lg font-semibold mb-2">Delete Account</h3>
                         <button
