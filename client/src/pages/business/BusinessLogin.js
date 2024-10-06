@@ -1,44 +1,37 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { loginBusiness } from '../../actions/businessAction'; // Update the action import
+import { useDispatch, useSelector } from 'react-redux'; // Import useSelector
+import { loginBusiness } from '../../actions/businessAction'; 
 import { useNavigate, Link } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { FaEye, FaEyeSlash } from 'react-icons/fa'; // Import eye icons
+import { FaEye, FaEyeSlash } from 'react-icons/fa'; 
 
 const BusinessLoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // State for toggling password visibility
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // Get loading and error from Redux state
+  const { loading, error } = useSelector((state) => state.business); 
 
   const validateEmail = (email) => /\S+@\S+\.\S+/.test(email);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // Reset error
 
-    // Input validation
     if (!validateEmail(email)) {
-      setError('Please enter a valid email address.');
+      toast.error('Please enter a valid email address.');
       return;
     }
-    // Uncomment this if you want password length validation
-    // if (password.length < 8) {
-    //   setError('Password must be at least 8 characters long.');
-    //   return;
-    // }
 
-    setLoading(true);
-    const response = await dispatch(loginBusiness(email, password)); // Dispatch business login action
-    setLoading(false);
+    // Dispatch business login action
+    const response = await dispatch(loginBusiness(email, password)); 
 
     if (response.success) {
       toast.success('Login successful!');
-      navigate('/business/dashboard'); // Redirect to the business dashboard
+      navigate('/'); 
     } else {
       toast.error(response.message || 'Login failed. Please check your credentials.');
     }

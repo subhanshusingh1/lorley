@@ -1,8 +1,9 @@
+// components/BusinessListing.js
 import React, { useEffect } from 'react';
-import { FaStar } from 'react-icons/fa'; 
-import { Link, useLocation } from 'react-router-dom'; 
-import { useDispatch, useSelector } from 'react-redux'; 
-import { fetchAllBusinesses } from '../../actions/businessAction'; 
+import { FaStar } from 'react-icons/fa';
+import { Link, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAllBusinesses } from '../../actions/businessAction';
 
 const BusinessListing = () => {
     const dispatch = useDispatch();

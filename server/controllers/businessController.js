@@ -14,6 +14,8 @@ const cloudinary = require('../config/cloudinary');
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const fs = require('fs');
+const mongoose = require('mongoose');
+
 
 // Configure Cloudinary storage for business uploads
 const storage = new CloudinaryStorage({
@@ -211,6 +213,7 @@ exports.login = asyncHandler(async (req, res) => {
 });
 
 
+
 // @Desc Forgot Password
 // @Route POST /api/v1/business/forgot-password
 // Controller for forgot password
@@ -294,76 +297,92 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     });
 });
 
-// fetch business detail for dashboard
-exports.getBusinessDetails = async (req, res) => {
-    const { businessId } = req.params; 
+// fetch business detail
+exports.getBusinessDetails = asyncHandler(async (req, res) => {
+    const businessId = req.params.id;
 
-    console.log("fetching route hit..")
+    // Log the received business ID for debugging
+    console.log("Business ID received:", businessId);
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        return res.status(400).json({ success: false, message: "Invalid business ID" });
+    }
 
     try {
-        const business = await Business.findById(businessId);
-
+        // Fetch the business by ID, exclude sensitive fields like password and refreshToken
+        const business = await Business.findById(businessId).select('-password -refreshToken');
+        
+        // Check if the business exists
         if (!business) {
-            return res.status(404).json({ message: 'Business not found' });
+            return res.status(404).json({ success: false, message: "Business not found" });
         }
 
-        return res.status(200).json({
+        // Return the full business document
+        res.status(200).json({
             success: true,
-            data: business,
+            data: business, // Use 'data' for consistency with your user controller
+            message: "Business details retrieved successfully",
         });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: 'Server error' });
+        console.error("Error fetching business details:", error);
+        res.status(500).json({ success: false, message: "Server error" });
     }
-};
+});
+
+
+
+
+
+
 
 
 
 // Function to calculate average rating from reviews
-const calculateAverageRating = (reviews) => {
-    if (!reviews.length) return 0; // No reviews means average is 0
-    const total = reviews.reduce((acc, review) => acc + review.rating, 0); // Assuming rating is a field in the review
-    return total / reviews.length; // Calculate average
-};
+// const calculateAverageRating = (reviews) => {
+//     if (!reviews.length) return 0; // No reviews means average is 0
+//     const total = reviews.reduce((acc, review) => acc + review.rating, 0); // Assuming rating is a field in the review
+//     return total / reviews.length; // Calculate average
+// };
 
-exports.fetchBusinessById = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+// exports.fetchBusinessById = asyncHandler(async (req, res) => {
+//     const { id } = req.params;
 
-    // Fetch business details by ID
-    const business = await Business.findById(id)
-        .populate('category') // Populate category for more details
-        .populate({
-            path: 'reviews',
-            model: 'Review',
-            populate: {
-                path: 'user', // Populate user if needed (assuming reviews have a user reference)
-                select: 'name profileImage' // Adjust based on your user model
-            }
-        });
+//     // Fetch business details by ID
+//     const business = await Business.findById(id)
+//         .populate('category') // Populate category for more details
+//         .populate({
+//             path: 'reviews',
+//             model: 'Review',
+//             populate: {
+//                 path: 'user', // Populate user if needed (assuming reviews have a user reference)
+//                 select: 'name profileImage' // Adjust based on your user model
+//             }
+//         });
 
-    if (!business) {
-        return res.status(404).json({ message: 'Business not found' });
-    }
+//     if (!business) {
+//         return res.status(404).json({ message: 'Business not found' });
+//     }
 
-    // Format the response to include all necessary details
-    const businessData = {
-        id: business._id,
-        name: business.name,
-        logo: business.logo,
-        email: business.email,
-        mobile: business.mobile,
-        address: business.address,
-        category: business.category, // This will contain the category object
-        photos: business.photos,
-        totalReviews: business.reviews.length,
-        averageRating: calculateAverageRating(business.reviews),
-        openingHours: business.openingHours,
-        views: business.views, // Include view count
-        searchCount: business.searchCount // Include search count
-    };
+//     // Format the response to include all necessary details
+//     const businessData = {
+//         id: business._id,
+//         name: business.name,
+//         logo: business.logo,
+//         email: business.email,
+//         mobile: business.mobile,
+//         address: business.address,
+//         category: business.category, // This will contain the category object
+//         photos: business.photos,
+//         totalReviews: business.reviews.length,
+//         averageRating: calculateAverageRating(business.reviews),
+//         openingHours: business.openingHours,
+//         views: business.views, // Include view count
+//         searchCount: business.searchCount // Include search count
+//     };
 
-    res.json(businessData);
-});
+//     res.json(businessData);
+// });
 
 
 // @Desc Generate Refresh Token for Business
@@ -599,6 +618,43 @@ exports.searchBusinesses = async (req, res) => {
         return res.status(500).json({ message: 'Server error' });
     }
 };
+
+
+// @desc    Delete a business
+// @route   DELETE /api/v1/business/:id
+// @access  Private
+exports.deleteBusiness = asyncHandler(async (req, res) => {
+    const { id } = req.params; // Get business ID from params
+
+    console.log('Business ID:', id);
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ success: false, message: "Invalid business ID" });
+    }
+
+    // Check if the business exists
+    const business = await Business.findById(id);
+    if (!business) {
+        return res.status(404).json({ success: false, message: `No business found with id: ${id}` });
+    }
+
+    // Check if OTP data exists for the business
+    const businessOtpData = await BusinessOtp.findOne({ businessId: id });
+    if (businessOtpData) {
+        // Proceed to delete the associated OTP data
+        await BusinessOtp.deleteOne({ _id: businessOtpData._id });
+    }
+
+    // Proceed to delete the business
+    await Business.deleteOne({ _id: id });
+
+    res.status(200).json({
+        success: true,
+        message: 'Business and associated OTP deleted successfully!',
+    });
+});
+
 
 
 

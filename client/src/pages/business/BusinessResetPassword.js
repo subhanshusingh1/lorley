@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { resetBusinessPassword } from '../../actions/businessAction'; // Import business reset password action
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
@@ -12,11 +12,16 @@ const BusinessResetPassword = () => {
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
     const [showConfirmPassword, setShowConfirmPassword] = useState(false); // State to toggle confirm password visibility
+
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const location = useLocation();
     const { email } = location.state || {}; // Get email from state
 
+    // Select loading and error from the Redux store
+    const { loading, error: resetError } = useSelector(state => state.business);
+
+    // Handle input changes
     const handleInputChange = (setter) => (e) => {
         setter(e.target.value);
         setError(''); // Reset error when typing
@@ -66,6 +71,7 @@ const BusinessResetPassword = () => {
             <div className="bg-white shadow-md rounded px-8 py-6 w-full max-w-md">
                 <h2 className="text-2xl font-bold mb-6 text-center">Reset Business Password</h2>
                 {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+                {resetError && <p className="text-red-500 text-sm mb-4">{resetError}</p>} {/* Display error from Redux store */}
 
                 <div className="mb-4">
                     <label className="block text-gray-700 text-sm font-bold mb-2">New Password</label>
@@ -109,9 +115,10 @@ const BusinessResetPassword = () => {
 
                 <button
                     onClick={resetPasswordHandler}
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+                    disabled={loading} // Disable button when loading
+                    className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                    Submit
+                    {loading ? 'Submitting...' : 'Submit'} {/* Change button text based on loading state */}
                 </button>
             </div>
         </div>

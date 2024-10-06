@@ -14,7 +14,8 @@ const {
     fetchAllBusinesses,
     searchBusinesses,
     registerBusiness,
-    getBusinessDetails
+    getBusinessDetails,
+    deleteBusiness
 } = require('../controllers/businessController'); // Ensure these controllers are defined
 const multer = require('multer');
 
@@ -45,13 +46,13 @@ router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 
 // Route to fetch Business Details
-router.get('/profile/:id', protectBusiness, fetchBusinessById);
+// router.get('/profile/:id', protectBusiness, fetchBusinessById);
 
 // Generate Refresh Token
 router.post('/refresh-token', refreshBusinessToken)
 
-// fetch details for dashboard
-router.get('/dashboard/:businessId', protectBusiness, getBusinessDetails);
+// fetch business details
+router.get('/:id', protectBusiness, getBusinessDetails);
 
 // Update Business Route
 router.put('/:id', protectBusiness, updateBusinessDetails);
@@ -67,6 +68,10 @@ router.get('/', fetchAllBusinesses);
 
 // Search for business
 router.get('/search', searchBusinesses);
+
+// delete business
+router.delete('/business/:id', deleteBusiness);
+
 
 
 module.exports = router;

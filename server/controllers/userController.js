@@ -267,7 +267,7 @@ exports.getProfileById = asyncHandler(async (req, res) => {
   }
 
   try {
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select('-password');
     
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -275,11 +275,12 @@ exports.getProfileById = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-      },
+      // data: {
+      //   _id: user._id,
+      //   name: user.name,
+      //   email: user.email,
+      // },
+      data: user,
       message: "User details retrieved successfully",
     });
   } catch (error) {

@@ -12,7 +12,7 @@ import {
   };
   
   // Reducer to handle review submission actions
-  export const reviewSubmit = (state = initialState, action) => {
+  export const reviewReducers = (state = initialState, action) => {
     switch (action.type) {
       case REVIEW_SUBMIT_REQUEST:
         return { ...state, loading: true, success: false, error: null };

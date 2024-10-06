@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { forgotBusinessPassword, verifyBusinessOtp } from '../../actions/businessAction'; 
+import { useDispatch, useSelector } from 'react-redux'; // Added useSelector to access the state
+import { forgotBusinessPassword, verifyBusinessOtp } from '../../actions/businessAction';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -9,23 +9,24 @@ const BusinessForgotPassword = () => {
     const [email, setEmail] = useState('');
     const [otp, setOtp] = useState('');
     const [isOtpSent, setIsOtpSent] = useState(false);
-    const [error, setError] = useState('');
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    
+    // Accessing business state from the store
+    const { error, success, message, loading } = useSelector((state) => state.business);
 
     const handleInputChange = (setter) => (e) => {
         setter(e.target.value);
-        setError(''); // Reset error when typing
     };
 
     const validateInput = () => {
         if (!email) {
-            setError('Email is required.');
+            toast.error('Email is required.');
             return false;
         }
         const isEmail = /\S+@\S+\.\S+/.test(email);
         if (!isEmail) {
-            setError('Please enter a valid email address.');
+            toast.error('Please enter a valid email address.');
             return false;
         }
         return true;
@@ -34,28 +35,27 @@ const BusinessForgotPassword = () => {
     const forgotPasswordHandler = async () => {
         if (!validateInput()) return;
 
-        setError(''); // Clear any previous error
-        const response = await dispatch(forgotBusinessPassword(email)); // Dispatch forgot business password action
+        const response = await dispatch(forgotBusinessPassword(email)); // Dispatch forgot password action
 
         if (response.success) {
-            toast.success('An OTP has been sent to your registered Business Email!');
+            toast.success(response.message);
             setIsOtpSent(true);
         } else {
-            toast.error(response.message || 'Failed to send OTP. Please try again.');
+            toast.error(response.message);
         }
     };
 
     const verifyOtpHandler = async () => {
         if (!otp) {
-            setError('OTP is required.');
+            toast.error('OTP is required.');
             return;
         }
-        const response = await dispatch(verifyBusinessOtp(email, otp)); // Dispatch verify business OTP action
+        const response = await dispatch(verifyBusinessOtp(email, otp)); // Dispatch verify OTP action
         if (response.success) {
             toast.success('OTP verified! You can now reset your business password.');
             navigate('/business/reset-password', { state: { email } });
         } else {
-            toast.error(response.message || 'Failed to verify OTP. Please try again.');
+            toast.error(response.message);
         }
     };
 
@@ -82,8 +82,9 @@ const BusinessForgotPassword = () => {
                         <button
                             onClick={forgotPasswordHandler}
                             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+                            disabled={loading} // Disable button while loading
                         >
-                            Send OTP
+                            {loading ? 'Sending OTP...' : 'Send OTP'}
                         </button>
                     </>
                 ) : (

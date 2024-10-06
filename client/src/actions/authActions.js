@@ -260,6 +260,8 @@ export const fetchUserProfile = (userId) => async (dispatch) => {
       withCredentials: true,
     });
 
+    console.log("fetch user hit....")
+
     dispatch({
       type: FETCH_PROFILE_SUCCESS,
       payload: response.data.data, // Assuming response structure

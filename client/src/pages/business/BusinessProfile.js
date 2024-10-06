@@ -1,139 +1,174 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchBusinessById } from '../../actions/businessAction'; // Adjust the path as needed
-import { FaStar, FaPhoneAlt, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { fetchBusinessProfile, updateBusinessProfile, uploadBusinessImage } from '../../actions/businessAction';
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 const BusinessProfile = ({ businessId }) => {
     const dispatch = useDispatch();
-    const navigate = useNavigate(); // Initialize navigate
-    const { business } = useSelector((state) => state.business.businessDetails); // Ensure you access the correct state slice
+    const navigate = useNavigate();
 
+    const business = useSelector((state) => state.business.business);
+    const loading = useSelector((state) => state.business.loading);
+    const error = useSelector((state) => state.business.error);
+
+    console.log(business);
+
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [category, setCategory] = useState('');
+    const [mobile, setMobile] = useState('');
+    const [address, setAddress] = useState('');
+    const [imagePreview, setImagePreview] = useState('https://via.placeholder.com/150');
+    const [isUpdating, setIsUpdating] = useState(false);
+
+    // Fetch business profile on component mount
     useEffect(() => {
-        dispatch(fetchBusinessById(businessId));
+        if (businessId) {
+            dispatch(fetchBusinessProfile(businessId));
+        }
     }, [dispatch, businessId]);
 
-    // Determine if business data is available
-    const isBusinessAvailable = !!business;
+    // Set state when business data is fetched
+    useEffect(() => {
+        if (business) {
+            setName(business.name || '');
+            setEmail(business.email || '');
+            setCategory(business.category || '');
+            setMobile(business.mobile || '');
+            setAddress(business.address || '');
+            setImagePreview(business.logo || 'https://via.placeholder.com/150');
+        }
+    }, [business]);
 
-    // Function to handle review button click
-    const handleAddReviewClick = () => {
-        navigate(`/business/review`); // Change to your review page route
+    // Loading state
+    if (loading) {
+        return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    }
+
+    // Handle image upload
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            try {
+                // const logoUrl = await dispatch(uploadBusinessImage(file));
+                // setImagePreview(logoUrl);
+                toast.success('Business logo uploaded successfully!');
+            } catch (err) {
+                toast.error('Image upload failed. Please try again.');
+            }
+        }
+    };
+
+    // Handle profile update
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsUpdating(true);
+        try {
+            // await dispatch(updateBusinessProfile({ businessId, name, email, category, mobile, address }));
+            toast.success('Business profile updated successfully!');
+            await dispatch(fetchBusinessProfile(businessId)); // Refetch to get the latest data
+        } catch (err) {
+            toast.error('Failed to update profile. Please try again.');
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
     return (
-        <div className="container mx-auto flex justify-center mb-8">
-            <div className="w-full lg:w-10/12">
-                {/* Carousel */}
-                <div className="carousel w-full h-72 sm:h-96 relative"> {/* Adjusted height for smaller screens */}
-                    {isBusinessAvailable && business.photos && business.photos.length > 0 ? (
-                        <div className="flex w-full h-full">
-                            {business.photos.map((photo, index) => (
-                                <div key={index} className="w-1/4 flex-shrink-0">
-                                    <img className="w-full h-full object-cover" src={photo} alt={`Business Photo ${index + 1}`} />
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="w-full h-full flex justify-center items-center bg-gray-200">
-                            <p className="text-gray-500">No images available</p>
-                        </div>
-                    )}
+        <div className="flex items-center justify-center min-h-screen bg-gray-100 p-6">
+            <div className="flex flex-col md:flex-row w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden">
+                <div className="w-full md:w-1/3 bg-blue-600 flex flex-col items-center justify-center p-6">
+                    <img
+                        className="rounded-full h-32 w-32 object-cover border-4 border-white mb-4"
+                        src={imagePreview}
+                        alt="Business Logo"
+                    />
+                    <h2 className="text-white text-2xl font-semibold mb-2">{name || 'Business Name Not Available'}</h2>
+                    
+                    <input
+                        type="file"
+                        id="businessLogo"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                    />
+                    <label
+                        htmlFor="businessLogo"
+                        className="mt-2 cursor-pointer bg-gray-200 text-gray-700 py-1 px-2 text-sm rounded hover:bg-gray-300"
+                    >
+                        Upload Business Logo
+                    </label>
                 </div>
 
-                {/* Main Content */}
-                <div className="flex flex-col lg:flex-row mt-6 justify-center items-stretch space-y-4 lg:space-y-0 lg:space-x-6">
-                    {/* Left Section */}
-                    <div className="lg:w-2/3 w-full p-4 sm:p-6"> {/* Added responsive padding */}
-                        <div className="flex items-center justify-center lg:justify-start">
-                            {isBusinessAvailable && business.logo && (
-                                <img
-                                    src={business.logo} // Assuming business.logo contains the URL for the logo
-                                    alt={`${business.name} Logo`}
-                                    className="w-12 h-12 mr-3 object-cover rounded-full" // Adjust size and styling as needed
-                                />
-                            )}
-                            <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800"> {/* Adjusted font size for smaller screens */}
-                                {isBusinessAvailable ? business.name : "Business Name Not Available"}
-                            </h1>
-                        </div>
+                <div className="w-full md:w-2/3 p-8">
+                    <h2 className="text-3xl font-semibold text-gray-800 mb-6">Business Profile Information</h2>
 
-                        <div className="flex justify-center lg:justify-start items-center mt-4 space-x-2">
-                            <div className="flex items-center">
-                                {isBusinessAvailable ? (
-                                    Array.from({ length: 5 }, (_, index) => (
-                                        <FaStar key={index} className={`h-5 w-5 ${index < business.averageRating ? 'text-yellow-500' : 'text-gray-300'}`} />
-                                    ))
-                                ) : (
-                                    Array.from({ length: 5 }, (_, index) => (
-                                        <FaStar key={index} className="h-5 w-5 text-gray-300" />
-                                    ))
-                                )}
-                            </div>
-                            <span className="ml-2 text-gray-500 text-sm">
-                                {isBusinessAvailable ? `(${business.totalReviews} reviews)` : "(0 reviews)"}
-                            </span>
-                        </div>
+                    {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
-                        <div className="mt-6 text-base text-gray-700 text-center lg:text-left leading-relaxed">
-                            <p>Category: <span className="font-medium">{isBusinessAvailable ? business.category : "N/A"}</span></p>
-                            <div className="mt-6 flex justify-center lg:justify-start space-x-3">
-                                <button 
-                                    className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-md hover:from-blue-600 hover:to-blue-700 transition-all duration-300 text-sm"
-                                    onClick={handleAddReviewClick} // Add onClick handler
-                                >
-                                    Add Review
-                                </button>
-                            </div>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Business Name</label>
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="block w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                placeholder="Business Name"
+                                required
+                            />
                         </div>
-
-                        {/* Opening Hours Section */}
-                        <div className="mt-8 bg-gray-100 p-4 rounded-md shadow">
-                            <h2 className="text-lg font-medium mb-2">Opening Hours</h2>
-                            <div className="flex flex-col">
-                                {isBusinessAvailable && business.openingHours ? (
-                                    Object.entries(business.openingHours).map(([day, { open, close }]) => (
-                                        <div key={day} className="flex justify-between py-1 border-b last:border-b-0">
-                                            <span className="text-gray-700">{day.charAt(0).toUpperCase() + day.slice(1)}</span>
-                                            <span className="text-gray-500">{open} - {close}</span>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <p className="text-gray-600">Opening hours not available</p>
-                                )}
-                            </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Email</label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="block w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                placeholder="Email"
+                                readOnly
+                            />
                         </div>
-                    </div>
-
-                    {/* Right Section */}
-                    <div className="lg:w-1/3 w-full p-4 sm:p-6"> {/* Added responsive padding */}
-                        <div className="text-center lg:text-left">
-                            <h2 className="text-lg font-medium mb-4">Contact Information</h2>
-                            <p className="mb-4 flex justify-center lg:justify-start items-center text-md">
-                                <FaEnvelope className="mr-2" /> {isBusinessAvailable ? business.email : "Email not available"}
-                            </p>
-                            <p className="mb-4 flex justify-center lg:justify-start items-center text-md">
-                                <FaPhoneAlt className="mr-2" /> {isBusinessAvailable ? business.mobile : "Mobile not available"}
-                            </p>
-                            <p className="flex justify-center lg:justify-start items-center text-md">
-                                <FaMapMarkerAlt className="mr-2" /> {isBusinessAvailable ? business.address : "Address not available"}
-                            </p>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Category</label>
+                            <input
+                                type="text"
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}
+                                className="block w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                placeholder="Business Category"
+                                required
+                            />
                         </div>
-                    </div>
-                </div>
-
-                {/* Review Section */}
-                <div className="w-full mt-12 bg-white p-6" style={{ minHeight: '200px' }}>
-                    <h2 className="text-xl font-semibold mb-4">Reviews ({isBusinessAvailable ? business.totalReviews : 0})</h2>
-                    <div className="p-4">
-                        {isBusinessAvailable && business.totalReviews > 0 ? (
-                            <div>
-                                {/* Reviews will be displayed here */}
-                            </div>
-                        ) : (
-                            <p className="text-gray-600 text-center">No reviews yet. Be the first to add one!</p>
-                        )}
-                    </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Mobile</label>
+                            <input
+                                type="text"
+                                value={mobile}
+                                onChange={(e) => setMobile(e.target.value)}
+                                className="block w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                placeholder="Mobile Number"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Address</label>
+                            <input
+                                type="text"
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
+                                className="block w-full px-4 py-2 mt-1 text-gray-700 bg-gray-100 border rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                placeholder="Business Address"
+                                required
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            className={`w-full ${isUpdating ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600'} text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300`}
+                            disabled={isUpdating}
+                        >
+                            {isUpdating ? 'Updating...' : 'Update Profile'}
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

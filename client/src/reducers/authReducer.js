@@ -28,7 +28,7 @@ import {
 const initialState = {
   token: null,
   isAuthenticated: false,
-  loading: true,
+  loading: false,
   user: null,
   otpVerified: false,
   error: null,
@@ -37,7 +37,7 @@ const initialState = {
   email: null, // Field to store user's email
 };
 
-export default function (state = initialState, action) {
+export default function authReducer(state = initialState, action) {
   const { type, payload } = action;
 
   switch (type) {

@@ -19,8 +19,8 @@ import {
     BUSINESS_RESET_PASSWORD_FAIL,
     FETCH_BUSINESS_REQUEST,
     FETCH_BUSINESS_SUCCESS,
-    FETCH_BUSINESS_FAILURE,
-    // BUSINESS_LOGIN_SUCCESS,
+    FETCH_BUSINESS_FAIL,  
+      // BUSINESS_LOGIN_SUCCESS,
     // BUSINESS_LOGIN_FAIL,
     // BUSINESS_LOGOUT,
     LOGOUT,
@@ -33,6 +33,9 @@ import {
     SEARCH_BUSINESS_REQUEST,
     SEARCH_BUSINESS_SUCCESS,
     SEARCH_BUSINESS_FAILURE,
+    DELETE_BUSINESS_REQUEST,
+    DELETE_BUSINESS_SUCCESS,
+    DELETE_BUSINESS_FAIL,
     FETCH_BUSINESS_DETAILS_REQUEST, 
     FETCH_BUSINESS_DETAILS_SUCCESS, 
     FETCH_BUSINESS_DETAILS_FAILURE 
@@ -52,32 +55,21 @@ export const registerBusiness = (businessData) => async (dispatch) => {
     try {
         dispatch({ type: BUSINESS_REGISTER_REQUEST });
 
-        // API call to register business
-        const { data } = await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/business/register`, businessData, {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
+        const { data } = await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/business/register`, businessData);
 
-        // Dispatch success action with the response data
         dispatch({
             type: BUSINESS_REGISTER_SUCCESS,
-            payload: data, // Contains business details and success message
+            payload: data,
         });
-
     } catch (error) {
-        // Extracting error message from the response, if available
-        const errorMessage = error.response && error.response.data && error.response.data.message
-            ? error.response.data.message
-            : error.message;
-
-        // Dispatch failure action with error message
         dispatch({
             type: BUSINESS_REGISTER_FAIL,
-            payload: errorMessage,
+            payload: error.response && error.response.data.message ? error.response.data.message : error.message,
         });
     }
 };
+
+
 
 
 // Send OTP for Business Registration
@@ -119,7 +111,6 @@ export const sendBusinessOtp = (email) => async (dispatch) => {
 };
 
 
-// Verify OTP
 // Verify OTP for Business
 export const verifyBusinessOtp = (email, otp) => async (dispatch) => {
     try {
@@ -168,31 +159,27 @@ export const verifyBusinessOtp = (email, otp) => async (dispatch) => {
 
 
 
+
 // Login Business
 export const loginBusiness = (email, password) => async (dispatch) => {
     try {
         dispatch({ type: LOGIN_REQUEST });
-  
-        // Use the business login endpoint
+
         const res = await axios.post(
             `${process.env.REACT_APP_API_URL}/api/v1/business/login`, 
             { email, password }, 
             { withCredentials: true } 
         );
-  
-  
+
         if (res.data.success) {
-            // Extracting tokens and business
             const { accessToken, refreshToken, business } = res.data.data; 
-  
-  
-            // Save access and refresh tokens
-            setAccessToken(accessToken); // Utility to set the access token
-            setRefreshToken(refreshToken); // Utility to set the refresh token
-  
+
+            setAccessToken(accessToken);
+            setRefreshToken(refreshToken);
+
             dispatch({
                 type: LOGIN_SUCCESS,
-                payload: { business }, 
+                payload: { business },
             });
             return { success: true };
         } else {
@@ -211,150 +198,119 @@ export const loginBusiness = (email, password) => async (dispatch) => {
         });
         return { success: false, message: errorMessage };
     }
-  };
+};
+
+
   
 
 // Forgot Password for Business
 export const forgotBusinessPassword = (email) => async (dispatch) => {
     try {
-      dispatch({ type: BUSINESS_FORGOT_PASSWORD_REQUEST }); // Dispatch business-specific request action
-      const config = { headers: { 'Content-Type': 'application/json' } };
-  
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/business/forgot-password`, { email }, config); // Use the correct business API endpoint
-  
-      dispatch({ type: BUSINESS_FORGOT_PASSWORD_SUCCESS }); // Dispatch business-specific success action
-  
-      return { success: true, message: 'OTP sent to your business email for verification!' };
+        dispatch({ type: BUSINESS_FORGOT_PASSWORD_REQUEST }); // Dispatch request action
+
+        const config = { headers: { 'Content-Type': 'application/json' } };
+        await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/business/forgot-password`, { email }, config); // API call
+
+        dispatch({ type: BUSINESS_FORGOT_PASSWORD_SUCCESS }); // Dispatch success action
+
+        return { success: true, message: 'An OTP has been sent to your registered Business Email!' }; // Updated success message
     } catch (error) {
-      dispatch({
-        type: BUSINESS_FORGOT_PASSWORD_FAIL, // Dispatch business-specific fail action
-        payload: error.response?.data?.message || error.message,
-      });
-  
-      return { success: false, message: error.response?.data?.message || error.message };
-    }
-  };
-
-  // Reset Business Password
-export const resetBusinessPassword = (email, newPassword) => async (dispatch) => {
-    try {
-      dispatch({ type: BUSINESS_RESET_PASSWORD_REQUEST });
-      const config = { headers: { 'Content-Type': 'application/json' } };
-  
-      // No OTP in the payload anymore
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/business/reset-password`, { email, newPassword }, config);
-  
-      dispatch({ type: BUSINESS_RESET_PASSWORD_SUCCESS });
-  
-      return { success: true, message: 'Business password reset successful!' };
-    } catch (error) {
-      dispatch({
-        type: BUSINESS_RESET_PASSWORD_FAIL,
-        payload: error.response?.data?.message || error.message,
-      });
-      return { success: false, message: error.response?.data?.message || error.message };
-    }
-  };
-
-
-
-// fetch business details for dashboard
-export const fetchBusinessDetails = (businessId) => async (dispatch) => {
-    try {
-        dispatch({ type: FETCH_BUSINESS_DETAILS_REQUEST });
-
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/business/dashboard/${businessId}`, {
-            withCredentials: true,
-        });
-
-        console.log("started fetching...")
-
-        // Extracting the required details from the response
-        const { name, email, mobile, businessType, category } = response.data.data;
-
         dispatch({
-            type: FETCH_BUSINESS_DETAILS_SUCCESS,
-            payload: { name, email, mobile, businessType, category },
+            type: BUSINESS_FORGOT_PASSWORD_FAIL, // Dispatch fail action
+            payload: error.response?.data?.message || error.message,
         });
-    } catch (error) {
-        if (error.response?.status === 401) {
-            // Attempt to refresh token
-            const refreshResponse = await dispatch(refreshAccessToken());
 
-            if (refreshResponse.success) {
-                // Retry fetching business details after refreshing token
-                const retryResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/business/${businessId}`, {
-                    withCredentials: true,
-                });
-
-                const { name, email, mobile, businessType, category } = retryResponse.data.data;
-
-                dispatch({
-                    type: FETCH_BUSINESS_DETAILS_SUCCESS,
-                    payload: { name, email, mobile, businessType, category },
-                });
-            } else {
-                dispatch({ 
-                    type: FETCH_BUSINESS_DETAILS_FAILURE, 
-                    payload: "Session expired, please log in again." 
-                });
-            }
-        } else {
-            dispatch({
-                type: FETCH_BUSINESS_DETAILS_FAILURE,
-                payload: error.response?.data?.message || error.message,
-            });
-        }
+        return { success: false, message: error.response?.data?.message || 'Failed to send OTP. Please try again.' }; // Default error message
     }
 };
 
 
+  // Reset Business Password  
+  export const resetBusinessPassword = (email, newPassword) => async (dispatch) => {
+      try {
+          dispatch({ type: BUSINESS_RESET_PASSWORD_REQUEST });
+          const config = { headers: { 'Content-Type': 'application/json' } };
+  
+          // No OTP in the payload anymore
+          await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/business/reset-password`, { email, newPassword }, config);
+  
+          dispatch({ type: BUSINESS_RESET_PASSWORD_SUCCESS });
+          return { success: true, message: 'Business password reset successful!' };
+      } catch (error) {
+          dispatch({
+              type: BUSINESS_RESET_PASSWORD_FAIL,
+              payload: error.response?.data?.message || error.message,
+          });
+          return { success: false, message: error.response?.data?.message || error.message };
+      }
+  };
+  
 
 // Fetch Business Details
-export const fetchBusinessById = (businessId) => async (dispatch) => {
+export const fetchBusinessProfile = (businessId) => async (dispatch) => {
     try {
-        dispatch({ type: FETCH_BUSINESS_REQUEST });
+      dispatch({ type: FETCH_BUSINESS_REQUEST });
+  
+      // Make the API request to fetch the business profile
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL}/api/v1/business/${businessId}`,
+        { withCredentials: true }
+      );
 
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/business/${businessId}`, {
-            withCredentials: true,
-        });
-
-        dispatch({
-            type: FETCH_BUSINESS_SUCCESS,
-            payload: response.data.data,
-        });
+      const data = await response.json();
+  
+      console.log("fetch business hit...." + data);
+  
+      // Assuming the controller sends the business data inside 'data'
+      dispatch({
+        type: FETCH_BUSINESS_SUCCESS,
+        payload: response.data.data, // Access the business data like in user action
+      });
+  
     } catch (error) {
-        if (error.response?.status === 401) {
-            // Attempt to refresh token
-            const refreshResponse = await dispatch(refreshAccessToken());
-
-            if (refreshResponse.success) {
-                // Retry fetching business after refreshing token
-                const retryResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/business/${businessId}`, {
-                    withCredentials: true,
-                });
-
-                dispatch({
-                    type: FETCH_BUSINESS_SUCCESS,
-                    payload: retryResponse.data.data,
-                });
-            } else {
-                dispatch({ 
-                    type: FETCH_BUSINESS_FAILURE, 
-                    payload: "Session expired, please log in again." 
-                });
-            }
+      if (error.response?.status === 401) {
+        // If access token expired, try refreshing
+        const refreshResponse = await dispatch(refreshAccessToken());
+  
+        if (refreshResponse.success) {
+          // Retry fetching business profile after refreshing token
+          const retryResponse = await axios.get(
+            `${process.env.REACT_APP_API_URL}/api/v1/business/${businessId}`,
+            { withCredentials: true }
+          );
+  
+          dispatch({
+            type: FETCH_BUSINESS_SUCCESS,
+            payload: retryResponse.data.data, // Retry response business data
+          });
         } else {
-            dispatch({
-                type: FETCH_BUSINESS_FAILURE,
-                payload: error.response?.data?.message || error.message,
-            });
+          // Handle token refresh failure, possibly log out the user
+          dispatch({
+            type: FETCH_BUSINESS_FAIL,
+            payload: "Session expired, please log in again.",
+          });
         }
+      } else {
+        // Handle other errors
+        dispatch({
+          type: FETCH_BUSINESS_FAIL,
+          payload: error.response?.data?.message || 'Failed to fetch business details.',
+        });
+      }
     }
-};
+  };
+  
 
 
-// Fetch all Business Detail
+
+
+
+
+
+
+
+
+// Fetch all Business 
 export const fetchAllBusinesses = () => async (dispatch) => {
     try {
         dispatch({ type: FETCH_ALL_BUSINESSES_REQUEST });
@@ -367,11 +323,11 @@ export const fetchAllBusinesses = () => async (dispatch) => {
             withCredentials: true,
         };
 
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/business`, config); // Adjust the URL to your API
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/business`, config);
 
         dispatch({
             type: FETCH_ALL_BUSINESSES_SUCCESS,
-            payload: response.data,
+            payload: response.data.businesses, // Assuming the API response structure includes businesses in an array
         });
     } catch (error) {
         dispatch({
@@ -380,6 +336,7 @@ export const fetchAllBusinesses = () => async (dispatch) => {
         });
     }
 };
+
 
 
 
@@ -497,103 +454,38 @@ export const searchBusinesses = (searchTerm) => async (dispatch) => {
 };
 
   
-  
-  
+// delete business
+export const deleteBusiness = (businessId, password) => async (dispatch) => {
+    try {
+        dispatch({ type: DELETE_BUSINESS_REQUEST });
 
+        await axios.delete(`${process.env.REACT_APP_API_URL}/api/v1/business/${businessId}`, {
+            withCredentials: true, // Include cookies (JWTs) in the request
+            data: { password },
+        });
 
-// // Business logout action
-// export const businessLogout = () => (dispatch) => {
-//     localStorage.removeItem('businessInfo');
-//     dispatch({ type: BUSINESS_LOGOUT });
-// };
+        dispatch({ type: DELETE_BUSINESS_SUCCESS });
+    } catch (error) {
+        if (error.response?.status === 401) {
+            const refreshResponse = await dispatch(refreshAccessToken());
 
-// // Fetch business details by ID
-// export const fetchBusinessById = (businessId) => async (dispatch) => {
-//     try {
-//         dispatch({ type: FETCH_BUSINESS_REQUEST });
-        
-//         const response = await fetchBusinessByIdApi(businessId); // Make API call
-//         dispatch({
-//             type: FETCH_BUSINESS_SUCCESS,
-//             payload: response.data, // Response should contain business data
-//         });
-//     } catch (error) {
-//         dispatch({
-//             type: FETCH_BUSINESS_FAILURE,
-//             payload: error.response && error.response.data.message
-//                 ? error.response.data.message
-//                 : error.message,
-//         });
-//     }
-// };
+            if (refreshResponse.success) {
+                // Retry business deletion after refreshing token
+                await axios.delete(`${process.env.REACT_APP_API_URL}/api/v1/business/${businessId}`, {
+                    withCredentials: true,
+                    data: { password },
+                });
 
-// // Fetch all businesses
-// export const fetchAllBusinesses = () => async (dispatch) => {
-//     try {
-//         dispatch({ type: FETCH_BUSINESS_REQUEST });
+                dispatch({ type: DELETE_BUSINESS_SUCCESS });
+            } else {
+                dispatch({ type: DELETE_BUSINESS_FAIL, payload: "Session expired, please log in again." });
+            }
+        } else {
+            dispatch({
+                type: DELETE_BUSINESS_FAIL,
+                payload: error.response?.data?.message || error.message,
+            });
+        }
+    }
+};
 
-//         const { data } = await axios.get('/api/v1/businesses'); // API call to get all businesses
-
-//         dispatch({
-//             type: FETCH_BUSINESS_SUCCESS,
-//             payload: data, // Response should contain an array of businesses
-//         });
-//     } catch (error) {
-//         dispatch({
-//             type: FETCH_BUSINESS_FAILURE,
-//             payload: error.response && error.response.data.message
-//                 ? error.response.data.message
-//                 : error.message,
-//         });
-//     }
-// };
-
-// // Update business details
-// export const updateBusiness = (businessData, businessId) => async (dispatch) => {
-//     try {
-//         dispatch({ type: UPDATE_BUSINESS_REQUEST });
-        
-//         const response = await updateBusinessApi(businessData, businessId); // Make API call to update
-//         dispatch({
-//             type: UPDATE_BUSINESS_SUCCESS,
-//             payload: response.data, // Updated business data
-//         });
-//     } catch (error) {
-//         dispatch({
-//             type: UPDATE_BUSINESS_FAILURE,
-//             payload: error.response && error.response.data.message
-//                 ? error.response.data.message
-//                 : error.message,
-//         });
-//     }
-// };
-
-// // Upload business logo or photos
-// export const uploadBusinessPhoto = (photoFile, businessId) => async (dispatch) => {
-//     try {
-//         dispatch({ type: UPLOAD_BUSINESS_PHOTO_REQUEST });
-        
-//         const formData = new FormData();
-//         formData.append('photo', photoFile);
-
-//         const config = {
-//             headers: {
-//                 'Content-Type': 'multipart/form-data',
-//             },
-//         };
-
-//         const response = await uploadBusinessPhotoApi(formData, businessId, config); // API call for photo upload
-        
-//         dispatch({
-//             type: UPLOAD_BUSINESS_PHOTO_SUCCESS,
-//             payload: response.data, // Uploaded photo details
-//         });
-//     } catch (error) {
-//         dispatch({
-//             type: UPLOAD_BUSINESS_PHOTO_FAILURE,
-//             payload: error.response && error.response.data.message
-//                 ? error.response.data.message
-//                 : error.message,
-//         });
-//     }
-// };

@@ -2,43 +2,19 @@
 import { createStore, applyMiddleware, combineReducers } from 'redux';
 import thunk from 'redux-thunk';
 import { composeWithDevTools } from 'redux-devtools-extension'; // DevTools for development
-import authReducer from './reducers/authReducer';
-import {
-  businessRegister,
-  businessLogin,
-  businessDetails,
-  updateBusiness,
-  businessOtp,
-  businessOtpVerification,
-  businessForgotPassword,
-  businessResetPassword,
-  businessLogout,
-  fetchAllBusinesses,
-  searchBusiness,
-  businessDetailsDashboard
-} from './reducers/businessReducers';
-import { reviewSubmit } from './reducers/reviewReducers';
+import businessReducer from './reducers/businessReducers'; // Updated business reducer
+import {reviewReducers} from './reducers/reviewReducers'; // Ensure singular reducer names
 import categoryReducer from './reducers/categoryReducer';
+import authReducer from './reducers/authReducer';
 
 // Combine all reducers
 const rootReducer = combineReducers({
-  auth: authReducer, // Authentication reducer
-  business: combineReducers({
-    businessRegister,
-    businessOtp,
-    businessOtpVerification,
-    businessLogin,
-    businessForgotPassword,
-    businessResetPassword,
-    businessDetails, // Existing business details reducer
-    businessDetailsDashboard, // Include your new business details dashboard reducer
-    businessLogout,
-    updateBusiness,
-    fetchBusiness: fetchAllBusinesses,
-    searchBusiness,
-  }),
+  // User reducer
+  auth: authReducer, // Using 'user' for user-related actions and state
+  // Business reducer
+  business: businessReducer, // Using 'business' for business-related actions and state
   // Review reducer
-  review: reviewSubmit,
+  review: reviewReducers,
   // Category reducer
   category: categoryReducer,
 });

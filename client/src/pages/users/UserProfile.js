@@ -33,7 +33,7 @@ const UserProfile = () => {
         if (user) {
             setName(user.name || '');
             setEmail(user.email || '');
-            setImagePreview(user.profileImage);
+            setImagePreview(user.profileImage || "https://via.placeholder.com/150");
         }
     }, [user]);
 
@@ -64,7 +64,6 @@ const UserProfile = () => {
         const file = e.target.files[0];
         try {
             const profileImageUrl = await dispatch(uploadProfileImage(file));
-            console.log('Profile Image URL:', profileImageUrl); // Log the URL for debugging
             setImagePreview(profileImageUrl);
             toast.success('Profile image uploaded successfully!');
         } catch (err) {
@@ -103,7 +102,7 @@ const UserProfile = () => {
                 <div className="w-full md:w-1/3 bg-blue-600 flex flex-col items-center justify-center p-6">
                     <img
                         className="rounded-full h-32 w-32 object-cover border-4 border-white mb-4"
-                        src={imagePreview || "https://via.placeholder.com/150"} 
+                        src={imagePreview}
                         alt="User Avatar"
                     />
                     <h2 className="text-white text-2xl font-semibold mb-2">{name || 'No Name Available'}</h2>
